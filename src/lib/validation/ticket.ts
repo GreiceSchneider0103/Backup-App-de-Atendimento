@@ -1,9 +1,13 @@
 import { z } from "zod";
 import { EMPRESAS, MOTIVOS, RESOLUCOES, STATUS_RECLAMACAO, STATUS_TICKET } from "@/config/domains";
 
+const isoDateOrDateString = z.string().refine((value) => !Number.isNaN(Date.parse(value)), {
+  message: "Data inválida"
+});
+
 export const ticketSchema = z.object({
   nomeCliente: z.string().min(3),
-  dataCompra: z.string().datetime(),
+  dataCompra: isoDateOrDateString,
   numeroVenda: z.string().min(3),
   linkPedido: z.string().url().optional().or(z.literal("")),
   uf: z.string().length(2),
@@ -12,18 +16,29 @@ export const ticketSchema = z.object({
   empresa: z.enum(EMPRESAS),
   produto: z.string().min(2),
   sku: z.string().min(2),
-  fabricante: z.string().optional(),
-  transportadora: z.string().optional(),
+  fabricante: z.string().optional().or(z.literal("")),
+  transportadora: z.string().optional().or(z.literal("")),
   statusReclamacao: z.enum(STATUS_RECLAMACAO),
-  dataReclamacao: z.string().datetime(),
+  dataReclamacao: isoDateOrDateString,
   motivo: z.enum(MOTIVOS),
-  detalhesCliente: z.string().optional(),
+  detalhesCliente: z.string().optional().or(z.literal("")),
   resolucao: z.enum(RESOLUCOES).optional().nullable(),
   valorReembolso: z.coerce.number().min(0).default(0),
   valorColeta: z.coerce.number().min(0).default(0),
   statusTicket: z.enum(STATUS_TICKET),
-  prazoConclusao: z.string().datetime().optional().nullable(),
+  prazoConclusao: isoDateOrDateString.optional().nullable(),
   responsavelId: z.string().uuid().optional().nullable()
+});
+
+export const ticketFormSchema = ticketSchema.extend({
+  dataCompra: z.string().min(1, "Data de compra é obrigatória"),
+  dataReclamacao: z.string().min(1, "Data da reclamação é obrigatória"),
+  prazoConclusao: z.string().optional().nullable(),
+  responsavelId: z.string().optional().nullable(),
+  linkPedido: z.string().optional(),
+  fabricante: z.string().optional(),
+  transportadora: z.string().optional(),
+  detalhesCliente: z.string().optional()
 });
 
 export const ticketFiltersSchema = z.object({
@@ -34,8 +49,8 @@ export const ticketFiltersSchema = z.object({
   statusReclamacao: z.enum(STATUS_RECLAMACAO).optional(),
   motivo: z.enum(MOTIVOS).optional(),
   responsavelId: z.string().uuid().optional(),
-  startDate: z.string().datetime().optional(),
-  endDate: z.string().datetime().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().positive().max(200).default(20),
   orderBy: z.enum(["dataReclamacao", "criadoEm", "custosTotais", "prazoConclusao"]).default("criadoEm"),
@@ -43,4 +58,5 @@ export const ticketFiltersSchema = z.object({
 });
 
 export type TicketInput = z.infer<typeof ticketSchema>;
+export type TicketFormInput = z.infer<typeof ticketFormSchema>;
 export type TicketFiltersInput = z.infer<typeof ticketFiltersSchema>;
