@@ -2,8 +2,11 @@ import { TicketForm } from "@/components/forms/ticket-form";
 
 export default function NewTicketPage() {
   return (
-    <section>
-      <h1>Criar ticket</h1>
+    <section className="page">
+      <div className="page-header">
+        <h1>Criar ticket</h1>
+        <p className="muted">Preencha os dados para registrar uma nova reclamação.</p>
+      </div>
       <TicketForm />
     </section>
   );

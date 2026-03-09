@@ -1,5 +1,5 @@
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export function getSupabaseBrowserClient() {
-  return createClientComponentClient();
+  return createSupabaseBrowserClient();
 }

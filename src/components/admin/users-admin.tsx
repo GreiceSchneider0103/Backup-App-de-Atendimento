@@ -1,10 +1,25 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
+import { StatusBadge } from "@/components/ui/status-badge";
 
-export function UsersAdmin({ initialUsers }: { initialUsers: any[] }) {
-  const [users, setUsers] = useState(initialUsers);
-  const [error, setError] = useState<string | null>(null);
+type AdminUser = {
+  id: string;
+  authUserId: string;
+  nome: string;
+  email: string;
+  perfil: "ATENDENTE" | "SUPERVISOR" | "ADMIN";
+  ativo: boolean;
+};
+
+function getSafeUsers(input: unknown): AdminUser[] {
+  return Array.isArray(input) ? input as AdminUser[] : [];
+}
+
+export function UsersAdmin({ initialUsers, initialError }: { initialUsers: unknown; initialError?: string | null }) {
+  const [users, setUsers] = useState<AdminUser[]>(() => getSafeUsers(initialUsers));
+  const [error, setError] = useState<string | null>(initialError ?? null);
+  const hasUsers = useMemo(() => Array.isArray(users) && users.length > 0, [users]);
 
   async function createUser(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -23,47 +38,81 @@ export function UsersAdmin({ initialUsers }: { initialUsers: any[] }) {
       body: JSON.stringify(payload)
     });
 
+    const body = await response.json().catch(() => ({}));
     if (!response.ok) {
-      const body = await response.json();
       setError(body.message ?? "Erro ao criar usuário");
       return;
     }
 
-    const created = await response.json();
-    setUsers((prev) => [created, ...prev]);
+    if (body?.data) {
+      setUsers((prev) => [body.data, ...prev]);
+      (event.currentTarget as HTMLFormElement).reset();
+    }
   }
 
   async function toggleAtivo(userId: string, ativo: boolean) {
-    await fetch(`/api/users/${userId}`, {
+    const response = await fetch(`/api/users/${userId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ativo: !ativo })
     });
+
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      setError(body.message ?? "Erro ao atualizar usuário");
+      return;
+    }
+
+    const updated = body?.data as AdminUser | undefined;
+    if (updated) {
+      setUsers((prev) => prev.map((user) => (user.id === userId ? updated : user)));
+      return;
+    }
+
     setUsers((prev) => prev.map((user) => (user.id === userId ? { ...user, ativo: !ativo } : user)));
   }
 
   return (
     <section className="grid">
-      <form onSubmit={createUser} className="card" style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 8 }}>
+      <form onSubmit={createUser} className="panel form-grid cols-4">
         <input name="authUserId" placeholder="Supabase Auth User ID" required />
         <input name="nome" placeholder="Nome" required />
         <input name="email" placeholder="Email" required type="email" />
-        <select name="perfil"><option value="ATENDENTE">ATENDENTE</option><option value="SUPERVISOR">SUPERVISOR</option><option value="ADMIN">ADMIN</option></select>
-        <button type="submit">Cadastrar usuário</button>
+        <select name="perfil" defaultValue="ATENDENTE">
+          <option value="ATENDENTE">ATENDENTE</option>
+          <option value="SUPERVISOR">SUPERVISOR</option>
+          <option value="ADMIN">ADMIN</option>
+        </select>
+        <button type="submit" className="btn btn-primary">Cadastrar usuário</button>
       </form>
-      {error ? <p style={{ color: "#b91c1c" }}>{error}</p> : null}
-      <div className="card">
-        <table>
-          <thead><tr><th>Nome</th><th>Email</th><th>Perfil</th><th>Ativo</th><th>Ação</th></tr></thead>
-          <tbody>
-            {users.map((user) => (
-              <tr key={user.id}>
-                <td>{user.nome}</td><td>{user.email}</td><td>{user.perfil}</td><td>{String(user.ativo)}</td>
-                <td><button onClick={() => toggleAtivo(user.id, user.ativo)}>{user.ativo ? "Inativar" : "Ativar"}</button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+
+      {error ? <p className="alert alert-error">{error}</p> : null}
+
+      <div className="panel table-wrap">
+        {!hasUsers ? (
+          <div className="empty-state">Nenhum usuário encontrado para exibir.</div>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr><th>Nome</th><th>Email</th><th>Perfil</th><th>Ativo</th><th>Ação</th></tr>
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr key={user.id}>
+                  <td>{user.nome}</td>
+                  <td>{user.email}</td>
+                  <td><StatusBadge value={user.perfil} /></td>
+                  <td>{user.ativo ? "Sim" : "Não"}</td>
+                  <td>
+                    <button className="btn btn-secondary" onClick={() => toggleAtivo(user.id, user.ativo)}>
+                      {user.ativo ? "Inativar" : "Ativar"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </section>
   );
