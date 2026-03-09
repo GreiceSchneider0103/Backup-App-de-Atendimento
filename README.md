@@ -72,6 +72,21 @@
 - Ação: incluir o(s) outbound IP(s) do serviço Render na allow-list do provedor do PostgreSQL/Supabase.
 - Enquanto bloqueado, autenticação/API podem retornar `503` com mensagem de indisponibilidade do banco.
 
+
+### Health check recomendado no Render
+- Defina o health check path do serviço para `GET /api/health`.
+- Esse endpoint **não consulta banco** e valida disponibilidade da aplicação + presença das variáveis essenciais de runtime.
+- Resposta esperada: `200` com `{"status":"ok","runtimeEnvConfigured":true...}`.
+
+### Runbook rápido para erro `Address not in tenant allow_list`
+1. Confirme `DATABASE_URL` e `DIRECT_URL` com host/porta corretos do banco.
+2. Garanta SSL na connection string (`sslmode=require` para provedores que exigem TLS).
+3. No provedor do PostgreSQL/Supabase, adicione os outbound IPs do Render na allow-list.
+4. Reimplante o serviço e teste `GET /api/health` e depois login/CRUD.
+5. Se usar pooler + conexão direta, mantenha:
+   - `DATABASE_URL`: URL de runtime da aplicação
+   - `DIRECT_URL`: URL direta para migrations
+
 ## Checklist de prontidão para Render
 - [ ] Variáveis de ambiente configuradas por ambiente (dev/homolog/prod)
 - [ ] Serviço Supabase Auth configurado com provedores/senha
