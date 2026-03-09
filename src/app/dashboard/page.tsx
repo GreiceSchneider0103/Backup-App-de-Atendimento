@@ -1,11 +1,11 @@
+import { requireCurrentUser } from "@/lib/auth/require-user";
+import { fetchInternalApi } from "@/lib/http/server-fetch";
 import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
 
 async function getDashboard(query: Record<string, string | undefined>) {
   const params = new URLSearchParams();
   Object.entries(query).forEach(([k, v]) => v && params.set(k, v));
-  const response = await fetch(`${process.env.APP_BASE_URL ?? "http://localhost:3000"}/api/dashboard?${params.toString()}`, {
-    cache: "no-store"
-  });
+  const response = await fetchInternalApi(`/api/dashboard?${params.toString()}`);
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -25,6 +25,7 @@ const cardConfig: Record<string, { label: string; tone: string; icon: string }> 
 };
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+  await requireCurrentUser();
   const query = await searchParams;
   const data = await getDashboard(query);
 

@@ -37,6 +37,25 @@ function signJwt(privateKey: string, header: Record<string, unknown>, payload: R
   return `${unsigned}.${signature}`;
 }
 
+function getSheetsEnvValidationError() {
+  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
+  const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
+
+  if (!clientEmail) return "Variável ausente: GOOGLE_SERVICE_ACCOUNT_EMAIL";
+  if (!clientEmail.includes("@") || !clientEmail.includes("iam.gserviceaccount.com")) {
+    return "GOOGLE_SERVICE_ACCOUNT_EMAIL inválido: use o e-mail da Service Account (termina com iam.gserviceaccount.com), não o OAuth Client ID";
+  }
+
+  if (!privateKey) return "Variável ausente: GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY";
+  if (!privateKey.includes("BEGIN PRIVATE KEY")) {
+    return "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY inválida: esperado conteúdo PEM da chave privada da Service Account";
+  }
+
+  if (!spreadsheetId) return "Variável ausente: GOOGLE_SHEETS_SPREADSHEET_ID";
+  return null;
+}
+
 function getSheetsEnv() {
   const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, "\n");
@@ -49,7 +68,7 @@ function getSheetsEnv() {
 
 async function getGoogleAccessToken() {
   const env = getSheetsEnv();
-  if (!env) throw new Error("Integração Google Sheets não configurada");
+  if (!env) throw new Error(getGoogleSheetsBackupConfigError() ?? "Integração Google Sheets não configurada");
 
   const now = Math.floor(Date.now() / 1000);
   const assertion = signJwt(
@@ -106,12 +125,16 @@ function extractRowNumberFromRange(updatedRange: string) {
 }
 
 export function isGoogleSheetsBackupEnabled() {
-  return getSheetsEnv() !== null;
+  return getSheetsEnvValidationError() === null;
+}
+
+export function getGoogleSheetsBackupConfigError() {
+  return getSheetsEnvValidationError();
 }
 
 export async function appendTicketBackupRow(ticket: TicketBackupRow) {
   const env = getSheetsEnv();
-  if (!env) throw new Error("Integração Google Sheets não configurada");
+  if (!env) throw new Error(getGoogleSheetsBackupConfigError() ?? "Integração Google Sheets não configurada");
 
   const token = await getGoogleAccessToken();
   const range = `${env.sheetName}!A:M`;
@@ -140,7 +163,7 @@ export async function appendTicketBackupRow(ticket: TicketBackupRow) {
 
 async function findRowNumberByTicketId(ticketId: string) {
   const env = getSheetsEnv();
-  if (!env) throw new Error("Integração Google Sheets não configurada");
+  if (!env) throw new Error(getGoogleSheetsBackupConfigError() ?? "Integração Google Sheets não configurada");
 
   const token = await getGoogleAccessToken();
   const range = `${env.sheetName}!A:A`;
@@ -160,7 +183,7 @@ async function findRowNumberByTicketId(ticketId: string) {
 
 export async function updateTicketBackupRow(ticket: TicketBackupRow, backupSheetRowNumber?: number | null) {
   const env = getSheetsEnv();
-  if (!env) throw new Error("Integração Google Sheets não configurada");
+  if (!env) throw new Error(getGoogleSheetsBackupConfigError() ?? "Integração Google Sheets não configurada");
 
   const rowNumber = backupSheetRowNumber ?? await findRowNumberByTicketId(ticket.id);
   if (!rowNumber) {

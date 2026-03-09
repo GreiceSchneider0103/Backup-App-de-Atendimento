@@ -85,9 +85,14 @@
   4. Em falha: mantém ticket salvo e grava `backupSyncStatus=FAILED` + `backupSyncError` para rastreio.
 
 ### Configuração
-1. Crie uma Service Account no Google Cloud com acesso à API Google Sheets.
-2. Compartilhe a planilha com o e-mail da service account (permissão Editor).
-3. Configure variáveis de ambiente da service account e da planilha no Render/ambiente local.
+1. Crie uma **Service Account** no Google Cloud com acesso à API Google Sheets.
+2. Gere uma chave JSON da Service Account e use:
+   - `client_email` -> `GOOGLE_SERVICE_ACCOUNT_EMAIL`
+   - `private_key` -> `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`
+3. Compartilhe a planilha com o e-mail da service account (permissão Editor).
+4. Defina `GOOGLE_SHEETS_SPREADSHEET_ID` com o trecho da URL entre `/d/` e `/edit`.
+5. (Opcional) Defina `GOOGLE_SHEETS_SHEET_NAME` (aba da planilha), padrão `Tickets`.
 
-### Observação de segurança
+### Observações importantes
+- **Não use OAuth Client ID** (`...apps.googleusercontent.com`) em `GOOGLE_SERVICE_ACCOUNT_EMAIL`; esse campo precisa ser o e-mail da service account (`...iam.gserviceaccount.com`).
 - A chave privada deve ficar somente em variável de ambiente (`GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`) e nunca em arquivo versionado.

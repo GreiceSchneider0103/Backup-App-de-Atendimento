@@ -1,12 +1,12 @@
+import { requireCurrentUser } from "@/lib/auth/require-user";
+import { fetchInternalApi } from "@/lib/http/server-fetch";
 import Link from "next/link";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 async function getTickets(query: Record<string, string | undefined>) {
   const params = new URLSearchParams();
   Object.entries(query).forEach(([key, value]) => value && params.set(key, value));
-  const response = await fetch(`${process.env.APP_BASE_URL ?? "http://localhost:3000"}/api/tickets?${params.toString()}`, {
-    cache: "no-store"
-  });
+  const response = await fetchInternalApi(`/api/tickets?${params.toString()}`);
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -21,6 +21,7 @@ async function getTickets(query: Record<string, string | undefined>) {
 }
 
 export default async function TicketsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+  await requireCurrentUser();
   const query = await searchParams;
   const result = await getTickets(query);
 

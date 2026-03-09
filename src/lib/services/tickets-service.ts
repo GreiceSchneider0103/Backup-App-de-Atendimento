@@ -5,7 +5,7 @@ import { TicketFiltersInput, TicketInput } from "@/lib/validation/ticket";
 import { getTicketScopeWhere, hasPermission } from "@/lib/rbac/permissions";
 import { calculateSla } from "@/lib/utils/sla";
 import { ForbiddenError } from "@/lib/errors";
-import { appendTicketBackupRow, isGoogleSheetsBackupEnabled, updateTicketBackupRow } from "@/lib/integrations/google-sheets-backup";
+import { appendTicketBackupRow, getGoogleSheetsBackupConfigError, isGoogleSheetsBackupEnabled, updateTicketBackupRow } from "@/lib/integrations/google-sheets-backup";
 import { logError } from "@/lib/logger";
 
 const sensitiveFields = ["valorReembolso", "valorColeta", "prazoConclusao", "resolucao"] as const;
@@ -76,7 +76,7 @@ async function syncTicketCreateBackup(ticketId: string) {
       where: { id: ticketId },
       data: {
         backupSyncStatus: BackupSyncStatus.FAILED,
-        backupSyncError: "Integração Google Sheets não configurada"
+        backupSyncError: getGoogleSheetsBackupConfigError() ?? "Integração Google Sheets não configurada"
       }
     });
     return;
@@ -105,7 +105,7 @@ async function syncTicketUpdateBackup(ticketId: string) {
       where: { id: ticketId },
       data: {
         backupSyncStatus: BackupSyncStatus.FAILED,
-        backupSyncError: "Integração Google Sheets não configurada"
+        backupSyncError: getGoogleSheetsBackupConfigError() ?? "Integração Google Sheets não configurada"
       }
     });
     return;

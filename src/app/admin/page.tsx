@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/lib/auth/session";
+import { requireCurrentUser } from "@/lib/auth/require-user";
 import { assertPermission } from "@/lib/rbac/permissions";
 
 function PlaceholderNotice({ text }: { text: string }) {
@@ -6,7 +6,7 @@ function PlaceholderNotice({ text }: { text: string }) {
 }
 
 export default async function AdminPage() {
-  const user = await getCurrentUser();
+  const user = await requireCurrentUser();
   assertPermission(user.perfil, "user.manage");
 
   return (

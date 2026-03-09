@@ -3,9 +3,21 @@ import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 
 const publicRoutes = ["/login", "/auth/callback"];
 
+function hasSupabaseEnv() {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+}
+
 export async function middleware(request: NextRequest) {
   if (publicRoutes.some((route) => request.nextUrl.pathname.startsWith(route))) {
     return NextResponse.next();
+  }
+
+  if (!hasSupabaseEnv()) {
+    if (request.nextUrl.pathname.startsWith("/api")) {
+      return NextResponse.json({ message: "Autenticação não configurada no ambiente" }, { status: 503 });
+    }
+
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   const response = NextResponse.next();

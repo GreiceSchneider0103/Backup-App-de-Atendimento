@@ -1,11 +1,11 @@
+import { requireCurrentUser } from "@/lib/auth/require-user";
+import { fetchInternalApi } from "@/lib/http/server-fetch";
 import Link from "next/link";
 
 async function getReport(query: Record<string, string | undefined>) {
   const params = new URLSearchParams();
   Object.entries(query).forEach(([k, v]) => v && params.set(k, v));
-  const response = await fetch(`${process.env.APP_BASE_URL ?? "http://localhost:3000"}/api/reports?${params.toString()}`, {
-    cache: "no-store"
-  });
+  const response = await fetchInternalApi(`/api/reports?${params.toString()}`);
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -28,6 +28,7 @@ function groupBy(items: any[], field: string) {
 }
 
 export default async function ReportsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+  await requireCurrentUser();
   const query = await searchParams;
   const data = await getReport(query);
   const params = new URLSearchParams();

@@ -1,7 +1,9 @@
+import { requireCurrentUser } from "@/lib/auth/require-user";
+import { fetchInternalApi } from "@/lib/http/server-fetch";
 import { KanbanBoard } from "@/components/tickets/kanban-board";
 
 async function getTickets() {
-  const response = await fetch(`${process.env.APP_BASE_URL ?? "http://localhost:3000"}/api/tickets?pageSize=200`, { cache: "no-store" });
+  const response = await fetchInternalApi("/api/tickets?pageSize=200");
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {
@@ -12,6 +14,7 @@ async function getTickets() {
 }
 
 export default async function KanbanTicketsPage() {
+  await requireCurrentUser();
   const result = await getTickets();
 
   return (

@@ -1,8 +1,10 @@
+import { requireCurrentUser } from "@/lib/auth/require-user";
+import { fetchInternalApi } from "@/lib/http/server-fetch";
 import Link from "next/link";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 async function getTicket(id: string) {
-  const response = await fetch(`${process.env.APP_BASE_URL ?? "http://localhost:3000"}/api/tickets/${id}`, { cache: "no-store" });
+  const response = await fetchInternalApi(`/api/tickets/${id}`);
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {
@@ -13,6 +15,7 @@ async function getTicket(id: string) {
 }
 
 export default async function TicketDetail({ params }: { params: Promise<{ id: string }> }) {
+  await requireCurrentUser();
   const { id } = await params;
   const { ticket, error } = await getTicket(id);
 

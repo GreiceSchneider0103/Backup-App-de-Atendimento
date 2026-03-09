@@ -1,10 +1,10 @@
+import { requireCurrentUser } from "@/lib/auth/require-user";
 import { prisma } from "@/lib/db/prisma";
-import { getCurrentUser } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 export default async function UsersPage() {
-  const user = await getCurrentUser();
+  const user = await requireCurrentUser();
 
   if (!hasPermission(user.perfil, "user.manage")) {
     return (
