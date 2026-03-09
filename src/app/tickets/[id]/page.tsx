@@ -83,7 +83,7 @@ export default async function TicketDetail({ params }: { params: Promise<{ id: s
           <article className="card">
             <h2>Histórico de auditoria</h2>
             <ul>
-              {(Array.isArray(ticket.auditoria) ? ticket.auditoria : []).map((item: any) => (
+              {(Array.isArray(ticket.auditoria) ? ticket.auditoria : []).map((item: { id: string; dataHora: string; acao: string; campo: string }) => (
                 <li key={item.id}>{item.dataHora} — {item.acao} — {item.campo}</li>
               ))}
             </ul>

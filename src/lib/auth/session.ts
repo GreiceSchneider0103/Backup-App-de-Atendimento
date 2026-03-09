@@ -1,11 +1,11 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, Usuario } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { ForbiddenError, ServiceUnavailableError, UnauthorizedError } from "@/lib/errors";
 import { createSupabaseRouteClient, createSupabaseServerClient } from "@/lib/supabase/server";
 
 function mapDatabaseAuthError(error: unknown): never {
   if (error instanceof Prisma.PrismaClientInitializationError) {
-    throw new ServiceUnavailableError("Banco de dados indisponível. Verifique allow_list/rede do provedor.");
+    throw new ServiceUnavailableError("Banco de dados indisponível. Verifique DATABASE_URL/DIRECT_URL (Supabase pooler) e SSL.");
   }
 
   if (error instanceof Prisma.PrismaClientKnownRequestError || error instanceof Prisma.PrismaClientUnknownRequestError) {
@@ -18,7 +18,7 @@ function mapDatabaseAuthError(error: unknown): never {
   throw error;
 }
 
-async function getAppUserByAuthId(authUserId: string) {
+async function getAppUserByAuthId(authUserId: string): Promise<Usuario> {
   try {
     const appUser = await prisma.usuario.findUnique({ where: { authUserId } });
     if (!appUser) throw new ForbiddenError("Usuário não provisionado no sistema");
