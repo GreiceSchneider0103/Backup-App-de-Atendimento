@@ -1,7 +1,6 @@
-import { cookies } from "next/headers";
-import { createRouteHandlerClient, createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { prisma } from "@/lib/db/prisma";
 import { ForbiddenError, UnauthorizedError } from "@/lib/errors";
+import { createSupabaseRouteClient, createSupabaseServerClient } from "@/lib/supabase/server";
 
 async function getAppUserByAuthId(authUserId: string) {
   const appUser = await prisma.usuario.findUnique({ where: { authUserId } });
@@ -11,8 +10,7 @@ async function getAppUserByAuthId(authUserId: string) {
 }
 
 export async function getCurrentUser() {
-  const cookieStore = await cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const supabase = await createSupabaseServerClient();
   const {
     data: { user },
     error
@@ -23,8 +21,7 @@ export async function getCurrentUser() {
 }
 
 export async function getCurrentApiUser() {
-  const cookieStore = await cookies();
-  const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+  const supabase = await createSupabaseRouteClient();
   const {
     data: { user },
     error

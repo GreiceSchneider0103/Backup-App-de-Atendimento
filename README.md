@@ -50,6 +50,10 @@
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `APP_BASE_URL`
+- `GOOGLE_SERVICE_ACCOUNT_EMAIL`
+- `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`
+- `GOOGLE_SHEETS_SPREADSHEET_ID`
+- `GOOGLE_SHEETS_SHEET_NAME` (opcional, default `Tickets`)
 
 ## Deploy no Render
 ### Web Service
@@ -70,3 +74,20 @@
 - [ ] Health check de login + CRUD + exportações validado
 - [ ] Política de backup e retenção de banco definida
 - [ ] Alertas de erro/logging conectados no ambiente de produção
+
+
+## Backup automático em Google Sheets
+- A sincronização roda no backend após criar/editar/excluir logicamente ticket.
+- Fluxo:
+  1. Ticket é salvo no banco (fonte primária).
+  2. Sistema tenta sincronizar com Google Sheets.
+  3. Em sucesso: grava `backupSheetRowNumber`, `backupSyncStatus=SYNCED`, `backupLastSyncedAt`.
+  4. Em falha: mantém ticket salvo e grava `backupSyncStatus=FAILED` + `backupSyncError` para rastreio.
+
+### Configuração
+1. Crie uma Service Account no Google Cloud com acesso à API Google Sheets.
+2. Compartilhe a planilha com o e-mail da service account (permissão Editor).
+3. Configure variáveis de ambiente da service account e da planilha no Render/ambiente local.
+
+### Observação de segurança
+- A chave privada deve ficar somente em variável de ambiente (`GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`) e nunca em arquivo versionado.

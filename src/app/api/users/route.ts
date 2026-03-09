@@ -9,7 +9,12 @@ export async function GET() {
   return withApiHandler(async () => {
     const user = await getCurrentApiUser();
     assertPermission(user.perfil, "user.manage");
-    return prisma.usuario.findMany({ orderBy: { criadoEm: "desc" } });
+    const data = await prisma.usuario.findMany({ orderBy: { criadoEm: "desc" } });
+    return {
+      data,
+      pagination: { total: data.length, page: 1, pageSize: data.length, totalPages: 1 },
+      meta: { resource: "users" }
+    };
   });
 }
 
@@ -25,7 +30,7 @@ export async function POST(request: NextRequest) {
       ativo?: boolean;
     };
 
-    return prisma.usuario.create({
+    const created = await prisma.usuario.create({
       data: {
         authUserId: payload.authUserId,
         nome: payload.nome,
@@ -34,5 +39,7 @@ export async function POST(request: NextRequest) {
         ativo: payload.ativo ?? true
       }
     });
+
+    return { data: created };
   });
 }
