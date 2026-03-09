@@ -11,6 +11,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     assertPermission(actor.perfil, "user.manage");
     const { id } = await params;
     const payload = (await request.json()) as { nome?: string; perfil?: Perfil; ativo?: boolean };
-    return prisma.usuario.update({ where: { id }, data: payload });
+    const updated = await prisma.usuario.update({ where: { id }, data: payload });
+    return { data: updated };
   });
 }

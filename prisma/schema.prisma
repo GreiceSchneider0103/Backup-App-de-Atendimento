@@ -55,7 +55,11 @@ model Ticket {
   ativo            Boolean           @default(true)
   mesReclamacao    Int
   anoReclamacao    Int
-  slaStatus        String            @default("NO_PRAZO")
+  slaStatus          String            @default("NO_PRAZO")
+  backupSheetRowNumber Int?
+  backupSyncStatus   BackupSyncStatus  @default(PENDING)
+  backupLastSyncedAt DateTime?
+  backupSyncError    String?
   atualizadoPor    Usuario           @relation("tickets_atualizados", fields: [atualizadoPorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   criadoPor        Usuario           @relation("tickets_criados", fields: [criadoPorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   responsavel      Usuario?          @relation("tickets_responsavel", fields: [responsavelId], references: [id])
@@ -66,6 +70,7 @@ model Ticket {
   @@index([mesReclamacao, anoReclamacao], map: "Ticket_mes_ano_idx")
   @@index([responsavelId], map: "Ticket_responsavel_idx")
   @@index([statusTicket, statusReclamacao], map: "Ticket_status_idx")
+  @@index([backupSyncStatus], map: "Ticket_backup_status_idx")
 }
 
 model TicketAuditoria {
@@ -127,6 +132,12 @@ enum StatusTicket {
   AGUARDANDO_DEVOLUCAO
   AGUARDANDO_ASSISTENCIA
   AGUARDANDO_MARKETPLACE
+}
+
+enum BackupSyncStatus {
+  PENDING
+  SYNCED
+  FAILED
 }
 
 enum AcaoAuditoria {

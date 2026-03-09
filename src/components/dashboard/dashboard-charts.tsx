@@ -11,10 +11,25 @@ export function DashboardCharts({ charts }: { charts: Record<string, Array<{ nam
           <BarChart data={charts.porEmpresa ?? []}><XAxis dataKey="name" /><YAxis /><Tooltip /><Bar dataKey="value" /></BarChart>
         </ResponsiveContainer>
       </article>
+
       <article className="card" style={{ height: 280 }}>
         <h3>Tickets por status</h3>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart><Pie data={charts.porStatus ?? []} dataKey="value" nameKey="name" /><Tooltip /></PieChart>
+        </ResponsiveContainer>
+      </article>
+
+      <article className="card" style={{ height: 280 }}>
+        <h3>Tickets por motivo</h3>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={charts.porMotivo ?? []}><XAxis dataKey="name" /><YAxis /><Tooltip /><Bar dataKey="value" /></BarChart>
+        </ResponsiveContainer>
+      </article>
+
+      <article className="card" style={{ height: 280 }}>
+        <h3>Tickets por marketplace</h3>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={charts.porMarketplace ?? []}><XAxis dataKey="name" /><YAxis /><Tooltip /><Bar dataKey="value" /></BarChart>
         </ResponsiveContainer>
       </article>
     </div>
