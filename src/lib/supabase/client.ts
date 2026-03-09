@@ -1,5 +1,17 @@
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createBrowserClient } from "@supabase/ssr";
+
+let browserClient: ReturnType<typeof createBrowserClient> | null = null;
 
 export function createSupabaseBrowserClient() {
-  return createClientComponentClient();
+  if (browserClient) return browserClient;
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !anonKey) {
+    throw new Error("Supabase não configurado no browser");
+  }
+
+  browserClient = createBrowserClient(url, anonKey);
+  return browserClient;
 }

@@ -3,8 +3,9 @@ import { fetchInternalApi } from "@/lib/http/server-fetch";
 import Link from "next/link";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EMPRESAS, MOTIVOS, STATUS_RECLAMACAO, STATUS_TICKET } from "@/config/domains";
+import { TicketListResponse } from "@/lib/contracts";
 
-async function getTickets(query: Record<string, string | undefined>) {
+async function getTickets(query: Record<string, string | undefined>): Promise<{ data: TicketListResponse["data"]; pagination: TicketListResponse["pagination"]; error: string | null }> {
   const params = new URLSearchParams();
   Object.entries(query).forEach(([key, value]) => value && params.set(key, value));
   const response = await fetchInternalApi(`/api/tickets?${params.toString()}`);
@@ -89,7 +90,7 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
               </tr>
             </thead>
             <tbody>
-              {result.data.map((item: any) => (
+              {result.data.map((item) => (
                 <tr key={item.id}>
                   <td><Link href={`/tickets/${item.id}`}>{item.nomeCliente}</Link></td>
                   <td><StatusBadge value={item.canalMarketplace} /></td>

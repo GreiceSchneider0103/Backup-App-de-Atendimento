@@ -1,21 +1,28 @@
 import { requireCurrentUser } from "@/lib/auth/require-user";
 import { fetchInternalApi } from "@/lib/http/server-fetch";
 import Link from "next/link";
+import { EMPRESAS } from "@/config/domains";
+import { ReportsResponse } from "@/lib/contracts";
 
-async function getReport(query: Record<string, string | undefined>) {
+async function getReport(query: Record<string, string | undefined>): Promise<{ totals: ReportsResponse["totals"]; items: ReportsResponse["items"]; meta: ReportsResponse["meta"] | null; error: string | null }> {
   const params = new URLSearchParams();
   Object.entries(query).forEach(([k, v]) => v && params.set(k, v));
   const response = await fetchInternalApi(`/api/reports?${params.toString()}`);
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    return { totals: {}, items: [], error: payload?.message ?? "Falha ao carregar relatório" };
+    return { totals: { totalTickets: 0, totalCustos: 0, totalReembolso: 0, totalColeta: 0 }, items: [], meta: null, error: payload?.message ?? "Falha ao carregar relatório" };
   }
 
-  return { totals: payload.totals ?? {}, items: Array.isArray(payload.items) ? payload.items : [], error: null };
+  return {
+    totals: payload.totals ?? { totalTickets: 0, totalCustos: 0, totalReembolso: 0, totalColeta: 0 },
+    items: Array.isArray(payload.items) ? payload.items : [],
+    meta: payload.meta ?? null,
+    error: null
+  };
 }
 
-function groupBy(items: any[], field: string) {
+function groupBy(items: ReportsResponse["items"], field: keyof ReportsResponse["items"][number]) {
   const map = new Map<string, { tickets: number; custo: number }>();
   items.forEach((item) => {
     const key = String(item[field] ?? "N/D");
@@ -46,14 +53,22 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
       </div>
 
       <form className="panel form-grid cols-4">
-        <input name="startDate" type="date" />
-        <input name="endDate" type="date" />
+        <input name="startDate" type="date" defaultValue={query.startDate} />
+        <input name="endDate" type="date" defaultValue={query.endDate} />
         <input name="canalMarketplace" placeholder="Marketplace" defaultValue={query.canalMarketplace} />
-        <input name="empresa" placeholder="Empresa" defaultValue={query.empresa} />
+        <select name="empresa" defaultValue={query.empresa ?? ""}>
+          <option value="">Todas as empresas</option>
+          {EMPRESAS.map((item) => <option key={item} value={item}>{item}</option>)}
+        </select>
         <button type="submit" className="btn btn-secondary">Filtrar</button>
       </form>
 
       {data.error ? <div className="alert alert-error">{data.error}</div> : null}
+      {data.meta?.truncated ? (
+        <div className="alert" style={{ background: "#fffbeb", border: "1px solid #fcd34d", color: "#92400e" }}>
+          Relatório limitado a {data.meta.limit} itens. Total disponível: {data.meta.totalAvailable}.
+        </div>
+      ) : null}
 
       <div className="grid grid-4">
         {Object.entries(data.totals).map(([k, v]) => (
