@@ -49,6 +49,7 @@ export const ticketFiltersSchema = z.object({
   statusReclamacao: z.enum(STATUS_RECLAMACAO).optional(),
   motivo: z.enum(MOTIVOS).optional(),
   responsavelId: z.string().uuid().optional(),
+  criadoPorId: z.string().uuid().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   page: z.coerce.number().int().positive().default(1),

@@ -10,6 +10,7 @@ import { TicketFormInput, ticketFormSchema } from "@/lib/validation/ticket";
 type TicketFormProps = {
   ticketId?: string;
   initialValues?: Partial<TicketFormInput>;
+  canEditSensitive?: boolean;
 };
 
 function toDateInput(value?: string | null) {
@@ -17,7 +18,7 @@ function toDateInput(value?: string | null) {
   return value.slice(0, 10);
 }
 
-export function TicketForm({ ticketId, initialValues }: TicketFormProps) {
+export function TicketForm({ ticketId, initialValues, canEditSensitive = true }: TicketFormProps) {
   const router = useRouter();
   const [requestError, setRequestError] = useState<string | null>(null);
 
@@ -107,15 +108,17 @@ export function TicketForm({ ticketId, initialValues }: TicketFormProps) {
       <input {...register("responsavelId")} placeholder="ID do responsável" />
       <select {...register("statusReclamacao")}>{STATUS_RECLAMACAO.map((item) => <option key={item} value={item}>{item}</option>)}</select>
       <select {...register("motivo")}>{MOTIVOS.map((item) => <option key={item} value={item}>{item}</option>)}</select>
-      <select {...register("resolucao")}>
+      <select {...register("resolucao")} disabled={!canEditSensitive}>
         <option value="">Sem resolução</option>
         {RESOLUCOES.map((item) => <option key={item} value={item}>{item}</option>)}
       </select>
       <select {...register("statusTicket")}>{STATUS_TICKET.map((item) => <option key={item} value={item}>{item}</option>)}</select>
-      <input {...register("prazoConclusao")} type="date" />
+      <input {...register("prazoConclusao")} type="date" disabled={!canEditSensitive} />
       <textarea {...register("detalhesCliente")} placeholder="Detalhes do cliente" />
-      <input {...register("valorReembolso", { valueAsNumber: true })} type="number" step="0.01" placeholder="Valor reembolso" />
-      <input {...register("valorColeta", { valueAsNumber: true })} type="number" step="0.01" placeholder="Valor coleta" />
+      <input {...register("valorReembolso", { valueAsNumber: true })} type="number" step="0.01" placeholder="Valor reembolso" disabled={!canEditSensitive} />
+      <input {...register("valorColeta", { valueAsNumber: true })} type="number" step="0.01" placeholder="Valor coleta" disabled={!canEditSensitive} />
+
+      {!canEditSensitive ? <p className="muted" style={{ gridColumn: "1 / -1" }}>Seu perfil não pode editar campos sensíveis (reembolso, coleta, prazo e resolução).</p> : null}
 
       {(Object.keys(errors).length > 0 || requestError) ? (
         <p style={{ color: "#b91c1c", gridColumn: "1 / -1" }}>

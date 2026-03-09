@@ -14,6 +14,10 @@ async function getTicket(id: string) {
   return { ticket: payload, error: null };
 }
 
+function dateText(value?: string | null) {
+  return value ? String(value).slice(0, 10) : "-";
+}
+
 export default async function TicketDetail({ params }: { params: Promise<{ id: string }> }) {
   await requireCurrentUser();
   const { id } = await params;
@@ -33,24 +37,48 @@ export default async function TicketDetail({ params }: { params: Promise<{ id: s
         <div className="alert alert-error">{error ?? "Ticket não encontrado"}</div>
       ) : (
         <>
-          <article className="card">
-            <h2>Resumo</h2>
-            <p><strong>Cliente:</strong> {ticket.nomeCliente}</p>
-            <p><strong>Venda:</strong> {ticket.numeroVenda}</p>
-            <p><strong>Marketplace:</strong> {ticket.canalMarketplace}</p>
-            <p><strong>Empresa:</strong> {ticket.empresa}</p>
-            <p><strong>Status:</strong> <StatusBadge value={ticket.statusTicket} /></p>
-            <p><strong>SLA:</strong> <StatusBadge value={ticket.slaStatus} /></p>
-            <p><strong>Custos totais:</strong> {Number(ticket.custosTotais).toFixed(2)}</p>
-          </article>
+          <div className="grid" style={{ gridTemplateColumns: "repeat(2,minmax(0,1fr))" }}>
+            <article className="card">
+              <h2>Dados do cliente</h2>
+              <p><strong>Nome:</strong> {ticket.nomeCliente}</p>
+              <p><strong>CPF:</strong> {ticket.cpf}</p>
+              <p><strong>UF:</strong> {ticket.uf}</p>
+              <p><strong>Detalhes:</strong> {ticket.detalhesCliente || "-"}</p>
+            </article>
 
-          <article className="card">
-            <h2>Backup Google Sheets</h2>
-            <p><strong>Status:</strong> <StatusBadge value={ticket.backupSyncStatus ?? "PENDING"} /></p>
-            <p><strong>Linha:</strong> {ticket.backupSheetRowNumber ?? "-"}</p>
-            <p><strong>Última sincronização:</strong> {ticket.backupLastSyncedAt ?? "-"}</p>
-            {ticket.backupSyncError ? <p><strong>Erro:</strong> {ticket.backupSyncError}</p> : null}
-          </article>
+            <article className="card">
+              <h2>Dados do pedido</h2>
+              <p><strong>Número venda:</strong> {ticket.numeroVenda}</p>
+              <p><strong>Link pedido:</strong> {ticket.linkPedido || "-"}</p>
+              <p><strong>Data compra:</strong> {dateText(ticket.dataCompra)}</p>
+              <p><strong>Marketplace:</strong> {ticket.canalMarketplace}</p>
+              <p><strong>Empresa:</strong> {ticket.empresa}</p>
+              <p><strong>Produto:</strong> {ticket.produto}</p>
+              <p><strong>SKU:</strong> {ticket.sku}</p>
+            </article>
+
+            <article className="card">
+              <h2>Reclamação e prazo</h2>
+              <p><strong>Status ticket:</strong> <StatusBadge value={ticket.statusTicket} /></p>
+              <p><strong>Status reclamação:</strong> <StatusBadge value={ticket.statusReclamacao} /></p>
+              <p><strong>Motivo:</strong> <StatusBadge value={ticket.motivo} /></p>
+              <p><strong>Resolução:</strong> {ticket.resolucao ?? "-"}</p>
+              <p><strong>Data reclamação:</strong> {dateText(ticket.dataReclamacao)}</p>
+              <p><strong>Prazo conclusão:</strong> {dateText(ticket.prazoConclusao)}</p>
+              <p><strong>SLA:</strong> <StatusBadge value={ticket.slaStatus} /></p>
+            </article>
+
+            <article className="card">
+              <h2>Valores e rastreabilidade</h2>
+              <p><strong>Reembolso:</strong> {Number(ticket.valorReembolso ?? 0).toFixed(2)}</p>
+              <p><strong>Coleta:</strong> {Number(ticket.valorColeta ?? 0).toFixed(2)}</p>
+              <p><strong>Custos totais:</strong> {Number(ticket.custosTotais ?? 0).toFixed(2)}</p>
+              <p><strong>Responsável:</strong> {ticket.responsavelId ?? "-"}</p>
+              <p><strong>Criado em:</strong> {dateText(ticket.criadoEm)}</p>
+              <p><strong>Atualizado em:</strong> {dateText(ticket.atualizadoEm)}</p>
+              <p><strong>Atualizado por:</strong> {ticket.atualizadoPorId ?? "-"}</p>
+            </article>
+          </div>
 
           <article className="card">
             <h2>Histórico de auditoria</h2>

@@ -3,6 +3,7 @@ import { ReactNode } from "react";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { SidebarNav } from "@/components/ui/sidebar-nav";
 import { getCurrentUser } from "@/lib/auth/session";
+import { UnauthorizedError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
 
@@ -21,8 +22,12 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
 
   try {
     currentUser = await getCurrentUser();
-  } catch {
-    currentUser = null;
+  } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      currentUser = null;
+    } else {
+      throw error;
+    }
   }
 
   if (!currentUser) {

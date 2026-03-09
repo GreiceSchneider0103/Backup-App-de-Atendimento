@@ -152,6 +152,7 @@ export async function listTickets(
     ...(query.statusReclamacao ? { statusReclamacao: query.statusReclamacao } : {}),
     ...(query.motivo ? { motivo: query.motivo } : {}),
     ...(query.responsavelId ? { responsavelId: query.responsavelId } : {}),
+    ...(query.criadoPorId ? { criadoPorId: query.criadoPorId } : {}),
     ...(getDateRange(query.startDate, query.endDate) ? { dataReclamacao: getDateRange(query.startDate, query.endDate) } : {})
   };
 

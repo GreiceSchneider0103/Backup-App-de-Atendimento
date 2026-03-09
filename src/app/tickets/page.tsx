@@ -2,6 +2,7 @@ import { requireCurrentUser } from "@/lib/auth/require-user";
 import { fetchInternalApi } from "@/lib/http/server-fetch";
 import Link from "next/link";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { EMPRESAS, MOTIVOS, STATUS_RECLAMACAO, STATUS_TICKET } from "@/config/domains";
 
 async function getTickets(query: Record<string, string | undefined>) {
   const params = new URLSearchParams();
@@ -38,7 +39,26 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
       <form className="panel form-grid cols-4">
         <input name="search" placeholder="Busca por cliente, venda, produto" defaultValue={query.search} />
         <input name="canalMarketplace" placeholder="Marketplace" defaultValue={query.canalMarketplace} />
+        <select name="empresa" defaultValue={query.empresa ?? ""}>
+          <option value="">Todas as empresas</option>
+          {EMPRESAS.map((item) => <option key={item} value={item}>{item}</option>)}
+        </select>
+        <select name="statusTicket" defaultValue={query.statusTicket ?? ""}>
+          <option value="">Todos os status de ticket</option>
+          {STATUS_TICKET.map((item) => <option key={item} value={item}>{item}</option>)}
+        </select>
+        <select name="statusReclamacao" defaultValue={query.statusReclamacao ?? ""}>
+          <option value="">Todos os status de reclamação</option>
+          {STATUS_RECLAMACAO.map((item) => <option key={item} value={item}>{item}</option>)}
+        </select>
+        <select name="motivo" defaultValue={query.motivo ?? ""}>
+          <option value="">Todos os motivos</option>
+          {MOTIVOS.map((item) => <option key={item} value={item}>{item}</option>)}
+        </select>
         <input name="responsavelId" placeholder="Responsável (id)" defaultValue={query.responsavelId} />
+        <input name="criadoPorId" placeholder="Criado por (id)" defaultValue={query.criadoPorId} />
+        <input name="startDate" type="date" defaultValue={query.startDate} />
+        <input name="endDate" type="date" defaultValue={query.endDate} />
         <select name="orderBy" defaultValue={query.orderBy ?? "criadoEm"}>
           <option value="criadoEm">Criado em</option>
           <option value="dataReclamacao">Data reclamação</option>
@@ -56,7 +76,17 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
         ) : (
           <table className="table">
             <thead>
-              <tr><th>Cliente</th><th>Marketplace</th><th>Empresa</th><th>Status</th><th>SLA</th><th>Custo</th><th>Backup</th></tr>
+              <tr>
+                <th>Nome do cliente</th>
+                <th>Marketplace</th>
+                <th>Empresa</th>
+                <th>Motivo</th>
+                <th>Status ticket</th>
+                <th>Status reclamação</th>
+                <th>Prazo</th>
+                <th>SLA</th>
+                <th>Custos totais</th>
+              </tr>
             </thead>
             <tbody>
               {result.data.map((item: any) => (
@@ -64,10 +94,12 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
                   <td><Link href={`/tickets/${item.id}`}>{item.nomeCliente}</Link></td>
                   <td><StatusBadge value={item.canalMarketplace} /></td>
                   <td><StatusBadge value={item.empresa} /></td>
+                  <td><StatusBadge value={item.motivo} /></td>
                   <td><StatusBadge value={item.statusTicket} /></td>
+                  <td><StatusBadge value={item.statusReclamacao} /></td>
+                  <td>{item.prazoConclusao ? String(item.prazoConclusao).slice(0, 10) : "-"}</td>
                   <td><StatusBadge value={item.slaStatus} /></td>
                   <td>{Number(item.custosTotais).toFixed(2)}</td>
-                  <td><StatusBadge value={item.backupSyncStatus ?? "PENDING"} /></td>
                 </tr>
               ))}
             </tbody>
