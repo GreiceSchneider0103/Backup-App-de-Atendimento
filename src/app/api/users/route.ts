@@ -1,9 +1,10 @@
-import { NextRequest } from "next/server";
-import { Perfil } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { getCurrentApiUser } from "@/lib/auth/session";
 import { assertPermission } from "@/lib/rbac/permissions";
 import { withApiHandler } from "@/lib/http";
+import { createUserSchema } from "@/lib/validation/user";
+import { registerUserAudit } from "@/lib/audit/user-audit";
+import { Prisma } from "@prisma/client";
 
 export async function GET() {
   return withApiHandler(async () => {
@@ -18,17 +19,12 @@ export async function GET() {
   });
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   return withApiHandler(async () => {
-    const user = await getCurrentApiUser();
-    assertPermission(user.perfil, "user.manage");
-    const payload = (await request.json()) as {
-      authUserId: string;
-      nome: string;
-      email: string;
-      perfil: Perfil;
-      ativo?: boolean;
-    };
+    const actor = await getCurrentApiUser();
+    assertPermission(actor.perfil, "user.manage");
+
+    const payload = createUserSchema.parse(await request.json());
 
     const created = await prisma.usuario.create({
       data: {
@@ -38,6 +34,13 @@ export async function POST(request: NextRequest) {
         perfil: payload.perfil,
         ativo: payload.ativo ?? true
       }
+    });
+
+    await registerUserAudit({
+      targetUserId: created.id,
+      actor,
+      action: "CREATE",
+      after: created as unknown as Prisma.JsonObject
     });
 
     return { data: created };

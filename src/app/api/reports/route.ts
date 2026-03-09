@@ -30,8 +30,9 @@ export async function GET(request: NextRequest) {
         : {})
     };
 
+    const limit = 500;
     const [items, totals] = await Promise.all([
-      prisma.ticket.findMany({ where, orderBy: { criadoEm: "desc" }, take: 500 }),
+      prisma.ticket.findMany({ where, orderBy: { criadoEm: "desc" }, take: limit }),
       prisma.ticket.aggregate({ where, _sum: { custosTotais: true, valorColeta: true, valorReembolso: true }, _count: true })
     ]);
 
@@ -42,6 +43,12 @@ export async function GET(request: NextRequest) {
         totalCustos: Number(totals._sum.custosTotais ?? 0),
         totalReembolso: Number(totals._sum.valorReembolso ?? 0),
         totalColeta: Number(totals._sum.valorColeta ?? 0)
+      },
+      meta: {
+        limit,
+        returned: items.length,
+        totalAvailable: totals._count,
+        truncated: totals._count > items.length
       }
     };
   });
