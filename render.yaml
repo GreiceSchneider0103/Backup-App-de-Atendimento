@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: lessul-go-atendimento
+    env: node
+    plan: starter
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    autoDeploy: true

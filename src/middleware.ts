@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 
-const publicRoutes = ["/login", "/auth/callback", "/api/health"];
+const publicRoutes = ["/login", "/auth/callback", "/api/health", "/indisponivel"];
 
 function hasSupabaseEnv() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);

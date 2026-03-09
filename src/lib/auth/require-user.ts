@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
-import { UnauthorizedError } from "@/lib/errors";
+import { ServiceUnavailableError, UnauthorizedError } from "@/lib/errors";
 
 export async function requireCurrentUser() {
   try {
@@ -8,6 +8,10 @@ export async function requireCurrentUser() {
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       redirect("/login");
+    }
+
+    if (error instanceof ServiceUnavailableError) {
+      redirect("/indisponivel");
     }
 
     throw error;
