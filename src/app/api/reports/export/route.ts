@@ -54,11 +54,19 @@ export async function GET(request: NextRequest) {
     if (format === "xlsx") {
       const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
       return new NextResponse(buffer, {
-        headers: { "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
+        headers: {
+          "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "Content-Disposition": 'attachment; filename="tickets.xlsx"'
+        }
       });
     }
 
     const csv = XLSX.utils.sheet_to_csv(worksheet);
-    return new NextResponse(csv, { headers: { "Content-Type": "text/csv; charset=utf-8" } });
+    return new NextResponse(csv, {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": 'attachment; filename="tickets.csv"'
+      }
+    });
   });
 }
