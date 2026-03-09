@@ -90,7 +90,7 @@ export function TicketForm({ ticketId, initialValues }: TicketFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="grid card" style={{ gridTemplateColumns: "repeat(2,minmax(0,1fr))" }}>
+    <form onSubmit={handleSubmit(onSubmit)} className="panel form-grid" style={{ gridTemplateColumns: "repeat(2,minmax(0,1fr))" }}>
       <input {...register("nomeCliente")} placeholder="Nome do cliente" />
       <input {...register("numeroVenda")} placeholder="Número da venda" />
       <input {...register("dataCompra")} type="date" />
@@ -123,7 +123,7 @@ export function TicketForm({ ticketId, initialValues }: TicketFormProps) {
         </p>
       ) : null}
 
-      <button type="submit" disabled={isSubmitting} style={{ gridColumn: "1 / -1" }}>
+      <button type="submit" className="btn btn-primary" disabled={isSubmitting} style={{ gridColumn: "1 / -1" }}>
         {isSubmitting ? "Salvando..." : "Salvar"}
       </button>
     </form>
