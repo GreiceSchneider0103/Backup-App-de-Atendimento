@@ -5,7 +5,7 @@ import { createSupabaseRouteClient, createSupabaseServerClient } from "@/lib/sup
 
 function mapDatabaseAuthError(error: unknown): never {
   if (error instanceof Prisma.PrismaClientInitializationError) {
-    throw new ServiceUnavailableError("Banco de dados indisponível. Verifique allow_list/rede do provedor.");
+    throw new ServiceUnavailableError("Banco de dados indisponível. Verifique DATABASE_URL/DIRECT_URL (Supabase pooler) e SSL.");
   }
 
   if (error instanceof Prisma.PrismaClientKnownRequestError || error instanceof Prisma.PrismaClientUnknownRequestError) {
