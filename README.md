@@ -75,8 +75,8 @@
 
 ### Health check recomendado no Render
 - Defina o health check path do serviço para `GET /api/health`.
-- Esse endpoint **não consulta banco** e valida apenas disponibilidade da aplicação + presença das variáveis essenciais.
-- Resposta esperada: `200` com `{"status":"ok"...}`.
+- Esse endpoint **não consulta banco** e valida disponibilidade da aplicação + presença das variáveis essenciais de runtime.
+- Resposta esperada: `200` com `{"status":"ok","runtimeEnvConfigured":true...}`.
 
 ### Runbook rápido para erro `Address not in tenant allow_list`
 1. Confirme `DATABASE_URL` e `DIRECT_URL` com host/porta corretos do banco.
