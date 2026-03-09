@@ -15,7 +15,6 @@ export default async function TicketDetail({ params }: { params: Promise<{ id: s
         <h1>Detalhe do ticket</h1>
         <Link href={`/tickets/${id}/edit`}>Editar</Link>
       </div>
-<<<<<<< HEAD
 
       <article className="card">
         <h2>Cliente e pedido</h2>
@@ -35,9 +34,6 @@ export default async function TicketDetail({ params }: { params: Promise<{ id: s
           ))}
         </ul>
       </article>
-=======
-      <article className="card"><pre>{JSON.stringify(ticket, null, 2)}</pre></article>
->>>>>>> origin/main
     </section>
   );
 }

@@ -1,9 +1,5 @@
 import { z } from "zod";
-<<<<<<< HEAD
 import { EMPRESAS, MOTIVOS, RESOLUCOES, STATUS_RECLAMACAO, STATUS_TICKET } from "@/config/domains";
-=======
-import { EMPRESAS, MOTIVOS, STATUS_RECLAMACAO, STATUS_TICKET } from "@/config/domains";
->>>>>>> origin/main
 
 export const ticketSchema = z.object({
   nomeCliente: z.string().min(3),
@@ -22,7 +18,6 @@ export const ticketSchema = z.object({
   dataReclamacao: z.string().datetime(),
   motivo: z.enum(MOTIVOS),
   detalhesCliente: z.string().optional(),
-<<<<<<< HEAD
   resolucao: z.enum(RESOLUCOES).optional().nullable(),
   valorReembolso: z.coerce.number().min(0).default(0),
   valorColeta: z.coerce.number().min(0).default(0),
@@ -49,12 +44,3 @@ export const ticketFiltersSchema = z.object({
 
 export type TicketInput = z.infer<typeof ticketSchema>;
 export type TicketFiltersInput = z.infer<typeof ticketFiltersSchema>;
-=======
-  valorReembolso: z.coerce.number().min(0).default(0),
-  valorColeta: z.coerce.number().min(0).default(0),
-  statusTicket: z.enum(STATUS_TICKET),
-  prazoConclusao: z.string().datetime().optional().nullable()
-});
-
-export type TicketInput = z.infer<typeof ticketSchema>;
->>>>>>> origin/main

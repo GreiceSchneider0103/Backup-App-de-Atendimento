@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { KanbanBoard } from "@/components/tickets/kanban-board";
 
 async function getTickets() {
@@ -13,13 +12,6 @@ export default async function KanbanTicketsPage() {
     <section className="grid">
       <h1>Kanban de tickets</h1>
       <KanbanBoard initialItems={data.items ?? []} />
-=======
-export default function KanbanTicketsPage() {
-  return (
-    <section className="grid">
-      <h1>Kanban de tickets</h1>
-      <div className="card">Estrutura preparada para drag-and-drop com auditoria de mudança de status por coluna.</div>
->>>>>>> origin/main
     </section>
   );
 }

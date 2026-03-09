@@ -16,7 +16,4 @@ export const STATUS_TICKET = [
   "AGUARDANDO_ASSISTENCIA",
   "AGUARDANDO_MARKETPLACE"
 ] as const;
-<<<<<<< HEAD
 export const RESOLUCOES = ["ASSISTENCIA", "DEVOLUCAO", "REEMBOLSO", "RESOLVIDO"] as const;
-=======
->>>>>>> origin/main

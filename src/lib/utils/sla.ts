@@ -7,12 +7,9 @@ export function calculateSla(statusTicket: StatusTicket, prazoConclusao?: Date |
   if (prazoConclusao && new Date() > prazoConclusao) return "ATRASADO";
   return "NO_PRAZO";
 }
-<<<<<<< HEAD
 
 export function assertSlaConsistency(statusTicket: StatusTicket, prazoConclusao?: Date | null) {
   if (statusTicket !== "CONCLUIDO" && !prazoConclusao) {
     throw new Error("prazoConclusao é obrigatório para tickets não concluídos.");
   }
 }
-=======
->>>>>>> origin/main

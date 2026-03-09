@@ -1,6 +1,5 @@
 import { TicketForm } from "@/components/forms/ticket-form";
 
-<<<<<<< HEAD
 async function getTicket(id: string) {
   const response = await fetch(`${process.env.APP_BASE_URL ?? "http://localhost:3000"}/api/tickets/${id}`, { cache: "no-store" });
   return response.json();
@@ -14,14 +13,6 @@ export default async function EditTicketPage({ params }: { params: Promise<{ id:
     <section>
       <h1>Editar ticket</h1>
       <TicketForm ticketId={id} initialValues={ticket} />
-=======
-export default async function EditTicketPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  return (
-    <section>
-      <h1>Editar ticket</h1>
-      <TicketForm ticketId={id} />
->>>>>>> origin/main
     </section>
   );
 }

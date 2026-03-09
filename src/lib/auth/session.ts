@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { cookies } from "next/headers";
 import { createRouteHandlerClient, createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { prisma } from "@/lib/db/prisma";
@@ -33,18 +32,4 @@ export async function getCurrentApiUser() {
 
   if (error || !user) throw new UnauthorizedError();
   return getAppUserByAuthId(user.id);
-=======
-import { headers } from "next/headers";
-import { prisma } from "@/lib/db/prisma";
-
-export async function getCurrentUser() {
-  const headerStore = await headers();
-  const email = headerStore.get("x-user-email") ?? "admin@lessul.local";
-  const user = await prisma.usuario.findUnique({ where: { email } });
-  if (!user || !user.ativo) {
-    throw new Error("Usuário sem acesso ou inativo.");
-  }
-
-  return user;
->>>>>>> origin/main
 }
