@@ -58,13 +58,19 @@
 ## Deploy no Render
 ### Web Service
 - Build: `npm install && npm run build`
-- Start: `npm run start`
+- Start: `npm run start` (usa `node .next/standalone/server.js`)
 - Runtime: Node 20+
 
 ### Banco
 - Render PostgreSQL
 - Executar migrations: `npm run prisma:migrate`
 - Seed opcional: `npm run prisma:seed`
+
+
+### Troubleshooting Render + Banco
+- Se aparecer `Address not in tenant allow_list`, o banco está bloqueando o IP de saída do Render.
+- Ação: incluir o(s) outbound IP(s) do serviço Render na allow-list do provedor do PostgreSQL/Supabase.
+- Enquanto bloqueado, autenticação/API podem retornar `503` com mensagem de indisponibilidade do banco.
 
 ## Checklist de prontidão para Render
 - [ ] Variáveis de ambiente configuradas por ambiente (dev/homolog/prod)

@@ -19,3 +19,10 @@ export class ForbiddenError extends AppError {
     super(message, 403, "FORBIDDEN");
   }
 }
+
+
+export class ServiceUnavailableError extends AppError {
+  constructor(message = "Serviço temporariamente indisponível") {
+    super(message, 503, "SERVICE_UNAVAILABLE");
+  }
+}
