@@ -1,6 +1,7 @@
 import { requireCurrentUser } from "@/lib/auth/require-user";
 import { fetchInternalApi } from "@/lib/http/server-fetch";
 import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
+import { EMPRESAS } from "@/config/domains";
 
 async function getDashboard(query: Record<string, string | undefined>) {
   const params = new URLSearchParams();
@@ -38,9 +39,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
       <form className="panel form-grid cols-4">
         <input name="canalMarketplace" placeholder="Marketplace" defaultValue={query.canalMarketplace} />
-        <input name="empresa" placeholder="Empresa" defaultValue={query.empresa} />
-        <input name="startDate" type="date" />
-        <input name="endDate" type="date" />
+        <select name="empresa" defaultValue={query.empresa ?? ""}>
+          <option value="">Todas as empresas</option>
+          {EMPRESAS.map((item) => <option key={item} value={item}>{item}</option>)}
+        </select>
+        <input name="startDate" type="date" defaultValue={query.startDate} />
+        <input name="endDate" type="date" defaultValue={query.endDate} />
         <button type="submit" className="btn btn-secondary">Filtrar</button>
       </form>
 

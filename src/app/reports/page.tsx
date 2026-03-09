@@ -1,6 +1,7 @@
 import { requireCurrentUser } from "@/lib/auth/require-user";
 import { fetchInternalApi } from "@/lib/http/server-fetch";
 import Link from "next/link";
+import { EMPRESAS } from "@/config/domains";
 
 async function getReport(query: Record<string, string | undefined>) {
   const params = new URLSearchParams();
@@ -46,10 +47,13 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
       </div>
 
       <form className="panel form-grid cols-4">
-        <input name="startDate" type="date" />
-        <input name="endDate" type="date" />
+        <input name="startDate" type="date" defaultValue={query.startDate} />
+        <input name="endDate" type="date" defaultValue={query.endDate} />
         <input name="canalMarketplace" placeholder="Marketplace" defaultValue={query.canalMarketplace} />
-        <input name="empresa" placeholder="Empresa" defaultValue={query.empresa} />
+        <select name="empresa" defaultValue={query.empresa ?? ""}>
+          <option value="">Todas as empresas</option>
+          {EMPRESAS.map((item) => <option key={item} value={item}>{item}</option>)}
+        </select>
         <button type="submit" className="btn btn-secondary">Filtrar</button>
       </form>
 
