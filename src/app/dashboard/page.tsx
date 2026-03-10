@@ -1,18 +1,17 @@
 import { requireCurrentUser } from "@/lib/auth/require-user";
-import { fetchInternalApi } from "@/lib/http/server-fetch";
 import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
+import { CANAIS_MARKETPLACE, EMPRESAS } from "@/config/domains";
+import { ticketFiltersSchema } from "@/lib/validation/ticket";
+import { getDashboardData } from "@/lib/services/dashboard-service";
 
-async function getDashboard(query: Record<string, string | undefined>) {
-  const params = new URLSearchParams();
-  Object.entries(query).forEach(([k, v]) => v && params.set(k, v));
-  const response = await fetchInternalApi(`/api/dashboard?${params.toString()}`);
-
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    return { cards: {}, charts: {}, error: payload?.message ?? "Falha ao carregar dashboard" };
+async function getDashboard(query: Record<string, string | undefined>, user: Awaited<ReturnType<typeof requireCurrentUser>>) {
+  const parsed = ticketFiltersSchema.partial().safeParse(query);
+  if (!parsed.success) {
+    return { cards: {}, charts: {} as Record<string, Array<{ name: string; value: number }>>, error: "Filtros inválidos para dashboard" };
   }
 
-  return { cards: payload.cards ?? {}, charts: payload.charts ?? {}, error: null };
+  const payload = await getDashboardData(parsed.data, user);
+  return { cards: payload.cards, charts: payload.charts, error: null };
 }
 
 const cardConfig: Record<string, { label: string; tone: string; icon: string }> = {
@@ -25,9 +24,9 @@ const cardConfig: Record<string, { label: string; tone: string; icon: string }> 
 };
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
-  await requireCurrentUser();
+  const user = await requireCurrentUser();
   const query = await searchParams;
-  const data = await getDashboard(query);
+  const data = await getDashboard(query, user);
 
   return (
     <section className="page">
@@ -37,10 +36,16 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       </div>
 
       <form className="panel form-grid cols-4">
-        <input name="canalMarketplace" placeholder="Marketplace" defaultValue={query.canalMarketplace} />
-        <input name="empresa" placeholder="Empresa" defaultValue={query.empresa} />
-        <input name="startDate" type="date" />
-        <input name="endDate" type="date" />
+        <select name="canalMarketplace" defaultValue={query.canalMarketplace ?? ""}>
+          <option value="">Todos os marketplaces</option>
+          {CANAIS_MARKETPLACE.map((item) => <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}
+        </select>
+        <select name="empresa" defaultValue={query.empresa ?? ""}>
+          <option value="">Todas as empresas</option>
+          {EMPRESAS.map((item) => <option key={item} value={item}>{item}</option>)}
+        </select>
+        <input name="startDate" type="date" defaultValue={query.startDate} />
+        <input name="endDate" type="date" defaultValue={query.endDate} />
         <button type="submit" className="btn btn-secondary">Filtrar</button>
       </form>
 

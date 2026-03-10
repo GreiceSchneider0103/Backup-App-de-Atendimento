@@ -1,21 +1,32 @@
-import { requireCurrentUser } from "@/lib/auth/require-user";
-import { fetchInternalApi } from "@/lib/http/server-fetch";
 import Link from "next/link";
+import { requireCurrentUser } from "@/lib/auth/require-user";
+import { CANAIS_MARKETPLACE, EMPRESAS } from "@/config/domains";
+import { ReportsResponse } from "@/lib/contracts";
+import { assertPermission } from "@/lib/rbac/permissions";
+import { ticketFiltersSchema } from "@/lib/validation/ticket";
+import { getReportsData } from "@/lib/services/reports-service";
 
-async function getReport(query: Record<string, string | undefined>) {
-  const params = new URLSearchParams();
-  Object.entries(query).forEach(([k, v]) => v && params.set(k, v));
-  const response = await fetchInternalApi(`/api/reports?${params.toString()}`);
-
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    return { totals: {}, items: [], error: payload?.message ?? "Falha ao carregar relatório" };
+async function getReport(query: Record<string, string | undefined>, user: Awaited<ReturnType<typeof requireCurrentUser>>): Promise<{ totals: ReportsResponse["totals"]; items: ReportsResponse["items"]; meta: ReportsResponse["meta"] | null; error: string | null }> {
+  const parsed = ticketFiltersSchema.partial().safeParse(query);
+  if (!parsed.success) {
+    return { totals: { totalTickets: 0, totalCustos: 0, totalReembolso: 0, totalColeta: 0 }, items: [], meta: null, error: "Filtros inválidos" };
   }
 
-  return { totals: payload.totals ?? {}, items: Array.isArray(payload.items) ? payload.items : [], error: null };
+  try {
+    const payload = await getReportsData(parsed.data, user);
+    return {
+      totals: payload.totals,
+      items: payload.items,
+      meta: payload.meta,
+      error: null
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Falha ao carregar relatório";
+    return { totals: { totalTickets: 0, totalCustos: 0, totalReembolso: 0, totalColeta: 0 }, items: [], meta: null, error: message };
+  }
 }
 
-function groupBy(items: any[], field: string) {
+function groupBy(items: ReportsResponse["items"], field: keyof ReportsResponse["items"][number]) {
   const map = new Map<string, { tickets: number; custo: number }>();
   items.forEach((item) => {
     const key = String(item[field] ?? "N/D");
@@ -28,9 +39,11 @@ function groupBy(items: any[], field: string) {
 }
 
 export default async function ReportsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
-  await requireCurrentUser();
+  const user = await requireCurrentUser();
+  assertPermission(user.perfil, "reports.full");
+
   const query = await searchParams;
-  const data = await getReport(query);
+  const data = await getReport(query, user);
   const params = new URLSearchParams();
   Object.entries(query).forEach(([k, v]) => v && params.set(k, v));
 
@@ -46,14 +59,25 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
       </div>
 
       <form className="panel form-grid cols-4">
-        <input name="startDate" type="date" />
-        <input name="endDate" type="date" />
-        <input name="canalMarketplace" placeholder="Marketplace" defaultValue={query.canalMarketplace} />
-        <input name="empresa" placeholder="Empresa" defaultValue={query.empresa} />
+        <input name="startDate" type="date" defaultValue={query.startDate} />
+        <input name="endDate" type="date" defaultValue={query.endDate} />
+        <select name="canalMarketplace" defaultValue={query.canalMarketplace ?? ""}>
+          <option value="">Todos os marketplaces</option>
+          {CANAIS_MARKETPLACE.map((item) => <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}
+        </select>
+        <select name="empresa" defaultValue={query.empresa ?? ""}>
+          <option value="">Todas as empresas</option>
+          {EMPRESAS.map((item) => <option key={item} value={item}>{item}</option>)}
+        </select>
         <button type="submit" className="btn btn-secondary">Filtrar</button>
       </form>
 
       {data.error ? <div className="alert alert-error">{data.error}</div> : null}
+      {data.meta?.truncated ? (
+        <div className="alert" style={{ background: "#fffbeb", border: "1px solid #fcd34d", color: "#92400e" }}>
+          Relatório limitado a {data.meta.limit} itens. Total disponível: {data.meta.totalAvailable}.
+        </div>
+      ) : null}
 
       <div className="grid grid-4">
         {Object.entries(data.totals).map(([k, v]) => (

@@ -1,30 +1,34 @@
 import { requireCurrentUser } from "@/lib/auth/require-user";
-import { fetchInternalApi } from "@/lib/http/server-fetch";
 import Link from "next/link";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { EMPRESAS, MOTIVOS, STATUS_RECLAMACAO, STATUS_TICKET } from "@/config/domains";
+import { CANAIS_MARKETPLACE, EMPRESAS, MOTIVOS, STATUS_RECLAMACAO, STATUS_TICKET } from "@/config/domains";
+import { TicketListResponse } from "@/lib/contracts";
+import { listTickets } from "@/lib/services/tickets-service";
+import { ticketFiltersSchema } from "@/lib/validation/ticket";
 
-async function getTickets(query: Record<string, string | undefined>) {
-  const params = new URLSearchParams();
-  Object.entries(query).forEach(([key, value]) => value && params.set(key, value));
-  const response = await fetchInternalApi(`/api/tickets?${params.toString()}`);
-
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    return { data: [], pagination: { total: 0, page: 1, pageSize: 20, totalPages: 0 }, error: payload?.message ?? "Falha ao carregar tickets" };
+async function getTickets(query: Record<string, string | undefined>, user: Awaited<ReturnType<typeof requireCurrentUser>>): Promise<{ data: TicketListResponse["data"]; pagination: TicketListResponse["pagination"]; error: string | null }> {
+  const parsed = ticketFiltersSchema.safeParse(query);
+  if (!parsed.success) {
+    return { data: [], pagination: { total: 0, page: 1, pageSize: 20, totalPages: 0 }, error: "Filtros inválidos" };
   }
 
-  return {
-    data: Array.isArray(payload?.data) ? payload.data : [],
-    pagination: payload?.pagination ?? { total: 0, page: 1, pageSize: 20, totalPages: 0 },
-    error: null
-  };
+  try {
+    const payload = await listTickets(parsed.data, user);
+    return {
+      data: payload.data,
+      pagination: payload.pagination,
+      error: null
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Falha ao carregar tickets";
+    return { data: [], pagination: { total: 0, page: 1, pageSize: 20, totalPages: 0 }, error: message };
+  }
 }
 
 export default async function TicketsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
-  await requireCurrentUser();
+  const user = await requireCurrentUser();
   const query = await searchParams;
-  const result = await getTickets(query);
+  const result = await getTickets(query, user);
 
   return (
     <section className="page">
@@ -38,7 +42,10 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
 
       <form className="panel form-grid cols-4">
         <input name="search" placeholder="Busca por cliente, venda, produto" defaultValue={query.search} />
-        <input name="canalMarketplace" placeholder="Marketplace" defaultValue={query.canalMarketplace} />
+        <select name="canalMarketplace" defaultValue={query.canalMarketplace ?? ""}>
+          <option value="">Todos os marketplaces</option>
+          {CANAIS_MARKETPLACE.map((item) => <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}
+        </select>
         <select name="empresa" defaultValue={query.empresa ?? ""}>
           <option value="">Todas as empresas</option>
           {EMPRESAS.map((item) => <option key={item} value={item}>{item}</option>)}
@@ -89,7 +96,7 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
               </tr>
             </thead>
             <tbody>
-              {result.data.map((item: any) => (
+              {result.data.map((item) => (
                 <tr key={item.id}>
                   <td><Link href={`/tickets/${item.id}`}>{item.nomeCliente}</Link></td>
                   <td><StatusBadge value={item.canalMarketplace} /></td>

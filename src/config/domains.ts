@@ -17,3 +17,5 @@ export const STATUS_TICKET = [
   "AGUARDANDO_MARKETPLACE"
 ] as const;
 export const RESOLUCOES = ["ASSISTENCIA", "DEVOLUCAO", "REEMBOLSO", "RESOLVIDO"] as const;
+
+export const CANAIS_MARKETPLACE = ["MERCADO_LIVRE", "MAGALU", "AMAZON", "SHOPEE", "SITE_PROPRIO", "OUTRO"] as const;

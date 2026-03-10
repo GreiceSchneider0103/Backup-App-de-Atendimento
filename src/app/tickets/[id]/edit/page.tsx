@@ -1,18 +1,56 @@
 import { requireCurrentUser } from "@/lib/auth/require-user";
-import { fetchInternalApi } from "@/lib/http/server-fetch";
 import { TicketForm } from "@/components/forms/ticket-form";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { getTicketById } from "@/lib/services/tickets-service";
+import { TicketFormInput } from "@/lib/validation/ticket";
+import { prisma } from "@/lib/db/prisma";
 
-async function getTicket(id: string) {
-  const response = await fetchInternalApi(`/api/tickets/${id}`);
-  const payload = await response.json().catch(() => ({}));
-  return { ok: response.ok, payload };
+async function getTicket(id: string, user: Awaited<ReturnType<typeof requireCurrentUser>>): Promise<{ ok: true; payload: Awaited<ReturnType<typeof getTicketById>> } | { ok: false; message: string }> {
+  try {
+    const payload = await getTicketById(id, user);
+    return { ok: true, payload };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Falha ao carregar ticket";
+    return { ok: false, message };
+  }
+}
+
+function toFormValues(payload: Awaited<ReturnType<typeof getTicketById>>): Partial<TicketFormInput> {
+  return {
+    nomeCliente: payload.nomeCliente,
+    dataCompra: payload.dataCompra ? payload.dataCompra.toISOString() : "",
+    numeroVenda: payload.numeroVenda,
+    linkPedido: payload.linkPedido ?? "",
+    uf: payload.uf,
+    cpf: payload.cpf,
+    canalMarketplace: (payload.canalMarketplace as TicketFormInput["canalMarketplace"]) ?? "OUTRO",
+    empresa: payload.empresa,
+    produto: payload.produto,
+    sku: payload.sku,
+    fabricante: payload.fabricante ?? "",
+    transportadora: payload.transportadora ?? "",
+    statusReclamacao: payload.statusReclamacao,
+    dataReclamacao: payload.dataReclamacao ? payload.dataReclamacao.toISOString() : "",
+    motivo: payload.motivo,
+    detalhesCliente: payload.detalhesCliente ?? "",
+    resolucao: payload.resolucao,
+    valorReembolso: Number(payload.valorReembolso ?? 0),
+    valorColeta: Number(payload.valorColeta ?? 0),
+    statusTicket: payload.statusTicket,
+    prazoConclusao: payload.prazoConclusao ? payload.prazoConclusao.toISOString() : null,
+    responsavelId: payload.responsavelId ?? null
+  };
 }
 
 export default async function EditTicketPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireCurrentUser();
   const { id } = await params;
-  const { ok, payload } = await getTicket(id);
+  const result = await getTicket(id, user);
+  const assignableUsers = await prisma.usuario.findMany({
+    where: { ativo: true },
+    orderBy: { nome: "asc" },
+    select: { id: true, nome: true }
+  });
 
   return (
     <section className="page">
@@ -20,23 +58,24 @@ export default async function EditTicketPage({ params }: { params: Promise<{ id:
         <h1>Editar ticket</h1>
         <p className="muted">Atualize informações operacionais e status da reclamação.</p>
       </div>
-      {!ok ? (
-        <div className="alert alert-error">{payload?.message ?? "Falha ao carregar ticket"}</div>
+      {!result.ok ? (
+        <div className="alert alert-error">{result.message ?? "Falha ao carregar ticket"}</div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }}>
           <TicketForm
             ticketId={id}
-            initialValues={payload}
+            initialValues={toFormValues(result.payload)}
             canEditSensitive={hasPermission(user.perfil, "ticket.update_sensitive")}
+            assignableUsers={assignableUsers}
           />
 
           <aside className="panel" style={{ alignSelf: "start" }}>
             <h3>Histórico lateral</h3>
-            <p><strong>Atualizado por:</strong> {payload?.atualizadoPorId ?? "-"}</p>
-            <p><strong>Atualizado em:</strong> {payload?.atualizadoEm ? String(payload.atualizadoEm).slice(0, 19).replace("T", " ") : "-"}</p>
+            <p><strong>Atualizado por:</strong> {result.payload?.atualizadoPorId ?? "-"}</p>
+            <p><strong>Atualizado em:</strong> {result.payload?.atualizadoEm ? String(result.payload.atualizadoEm).slice(0, 19).replace("T", " ") : "-"}</p>
             <ul style={{ maxHeight: 420, overflow: "auto", paddingLeft: 16 }}>
-              {(Array.isArray(payload?.auditoria) ? payload.auditoria : []).slice(0, 20).map((item: any) => (
-                <li key={item.id}>{item.dataHora} — {item.acao} — {item.campo}</li>
+              {(Array.isArray(result.payload?.auditoria) ? result.payload.auditoria : []).slice(0, 20).map((item) => (
+                <li key={item.id}>{String(item.dataHora)} — {item.acao} — {item.campo}</li>
               ))}
             </ul>
           </aside>

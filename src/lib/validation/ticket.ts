@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { EMPRESAS, MOTIVOS, RESOLUCOES, STATUS_RECLAMACAO, STATUS_TICKET } from "@/config/domains";
+import { CANAIS_MARKETPLACE, EMPRESAS, MOTIVOS, RESOLUCOES, STATUS_RECLAMACAO, STATUS_TICKET } from "@/config/domains";
 
 const isoDateOrDateString = z.string().refine((value) => !Number.isNaN(Date.parse(value)), {
   message: "Data inválida"
@@ -12,7 +12,7 @@ export const ticketSchema = z.object({
   linkPedido: z.string().url().optional().or(z.literal("")),
   uf: z.string().length(2),
   cpf: z.string().min(11).max(14),
-  canalMarketplace: z.string().min(2),
+  canalMarketplace: z.enum(CANAIS_MARKETPLACE, { message: "Marketplace inválido" }),
   empresa: z.enum(EMPRESAS),
   produto: z.string().min(2),
   sku: z.string().min(2),
@@ -34,17 +34,18 @@ export const ticketFormSchema = ticketSchema.extend({
   dataCompra: z.string().min(1, "Data de compra é obrigatória"),
   dataReclamacao: z.string().min(1, "Data da reclamação é obrigatória"),
   prazoConclusao: z.string().optional().nullable(),
-  responsavelId: z.string().optional().nullable(),
   linkPedido: z.string().optional(),
   fabricante: z.string().optional(),
   transportadora: z.string().optional(),
-  detalhesCliente: z.string().optional()
+  detalhesCliente: z.string().optional(),
+  resolucao: z.enum(RESOLUCOES).or(z.literal("")).optional().nullable(),
+  responsavelId: z.string().uuid("Responsável inválido").or(z.literal("")).optional().nullable()
 });
 
 export const ticketFiltersSchema = z.object({
   search: z.string().optional(),
   empresa: z.enum(EMPRESAS).optional(),
-  canalMarketplace: z.string().optional(),
+  canalMarketplace: z.enum(CANAIS_MARKETPLACE).optional(),
   statusTicket: z.enum(STATUS_TICKET).optional(),
   statusReclamacao: z.enum(STATUS_RECLAMACAO).optional(),
   motivo: z.enum(MOTIVOS).optional(),

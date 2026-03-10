@@ -4,13 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { EMPRESAS, MOTIVOS, RESOLUCOES, STATUS_RECLAMACAO, STATUS_TICKET } from "@/config/domains";
+import { CANAIS_MARKETPLACE, EMPRESAS, MOTIVOS, RESOLUCOES, STATUS_RECLAMACAO, STATUS_TICKET } from "@/config/domains";
 import { TicketFormInput, ticketFormSchema } from "@/lib/validation/ticket";
+
+type AssignableUser = { id: string; nome: string };
 
 type TicketFormProps = {
   ticketId?: string;
   initialValues?: Partial<TicketFormInput>;
   canEditSensitive?: boolean;
+  assignableUsers?: AssignableUser[];
 };
 
 function toDateInput(value?: string | null) {
@@ -18,7 +21,11 @@ function toDateInput(value?: string | null) {
   return value.slice(0, 10);
 }
 
-export function TicketForm({ ticketId, initialValues, canEditSensitive = true }: TicketFormProps) {
+function fieldError(errors: Record<string, { message?: string }>, key: string) {
+  return errors[key]?.message;
+}
+
+export function TicketForm({ ticketId, initialValues, canEditSensitive = true, assignableUsers = [] }: TicketFormProps) {
   const router = useRouter();
   const [requestError, setRequestError] = useState<string | null>(null);
 
@@ -35,7 +42,7 @@ export function TicketForm({ ticketId, initialValues, canEditSensitive = true }:
       linkPedido: initialValues?.linkPedido ?? "",
       uf: initialValues?.uf ?? "",
       cpf: initialValues?.cpf ?? "",
-      canalMarketplace: initialValues?.canalMarketplace ?? "",
+      canalMarketplace: initialValues?.canalMarketplace ?? "MERCADO_LIVRE",
       empresa: initialValues?.empresa ?? "LESSUL",
       produto: initialValues?.produto ?? "",
       sku: initialValues?.sku ?? "",
@@ -82,7 +89,11 @@ export function TicketForm({ ticketId, initialValues, canEditSensitive = true }:
 
     if (!response.ok) {
       const body = await response.json().catch(() => ({ message: "Erro desconhecido" }));
-      setRequestError(body.message ?? "Falha ao salvar ticket");
+      const issueMessage = Array.isArray(body?.issues)
+        ? body.issues.map((issue: { path?: string[]; message?: string }) => `${issue.path?.join(".") ?? "campo"}: ${issue.message ?? "inválido"}`).join(" | ")
+        : null;
+
+      setRequestError(issueMessage ?? body.message ?? "Falha ao salvar ticket");
       return;
     }
 
@@ -90,40 +101,138 @@ export function TicketForm({ ticketId, initialValues, canEditSensitive = true }:
     router.refresh();
   }
 
+  const typedErrors = errors as unknown as Record<string, { message?: string }>;
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="panel form-grid" style={{ gridTemplateColumns: "repeat(2,minmax(0,1fr))" }}>
-      <input {...register("nomeCliente")} placeholder="Nome do cliente" />
-      <input {...register("numeroVenda")} placeholder="Número da venda" />
-      <input {...register("dataCompra")} type="date" />
-      <input {...register("dataReclamacao")} type="date" />
-      <input {...register("uf")} placeholder="UF" maxLength={2} />
-      <input {...register("cpf")} placeholder="CPF" />
-      <input {...register("canalMarketplace")} placeholder="Marketplace" />
-      <select {...register("empresa")}>{EMPRESAS.map((item) => <option key={item} value={item}>{item}</option>)}</select>
-      <input {...register("produto")} placeholder="Produto" />
-      <input {...register("sku")} placeholder="SKU" />
-      <input {...register("fabricante")} placeholder="Fabricante" />
-      <input {...register("transportadora")} placeholder="Transportadora" />
-      <input {...register("linkPedido")} placeholder="Link do pedido" />
-      <input {...register("responsavelId")} placeholder="ID do responsável" />
-      <select {...register("statusReclamacao")}>{STATUS_RECLAMACAO.map((item) => <option key={item} value={item}>{item}</option>)}</select>
-      <select {...register("motivo")}>{MOTIVOS.map((item) => <option key={item} value={item}>{item}</option>)}</select>
-      <select {...register("resolucao")} disabled={!canEditSensitive}>
-        <option value="">Sem resolução</option>
-        {RESOLUCOES.map((item) => <option key={item} value={item}>{item}</option>)}
-      </select>
-      <select {...register("statusTicket")}>{STATUS_TICKET.map((item) => <option key={item} value={item}>{item}</option>)}</select>
-      <input {...register("prazoConclusao")} type="date" disabled={!canEditSensitive} />
-      <textarea {...register("detalhesCliente")} placeholder="Detalhes do cliente" />
-      <input {...register("valorReembolso", { valueAsNumber: true })} type="number" step="0.01" placeholder="Valor reembolso" disabled={!canEditSensitive} />
-      <input {...register("valorColeta", { valueAsNumber: true })} type="number" step="0.01" placeholder="Valor coleta" disabled={!canEditSensitive} />
+      <label>
+        Nome do cliente
+        <input {...register("nomeCliente")} placeholder="Nome do cliente" />
+      </label>
+
+      <label>
+        Número da venda
+        <input {...register("numeroVenda")} placeholder="Número da venda" />
+      </label>
+
+      <label>
+        Data da compra
+        <input {...register("dataCompra")} type="date" />
+      </label>
+
+      <label>
+        Data da reclamação
+        <input {...register("dataReclamacao")} type="date" />
+      </label>
+
+      <label>
+        Prazo de conclusão
+        <input {...register("prazoConclusao")} type="date" disabled={!canEditSensitive} />
+      </label>
+
+      <label>
+        UF
+        <input {...register("uf")} placeholder="UF" maxLength={2} />
+      </label>
+
+      <label>
+        CPF
+        <input {...register("cpf")} placeholder="CPF" />
+      </label>
+
+      <label>
+        Canal / Marketplace
+        <select {...register("canalMarketplace")}>
+          {CANAIS_MARKETPLACE.map((item) => <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}
+        </select>
+      </label>
+
+      <label>
+        Empresa
+        <select {...register("empresa")}>{EMPRESAS.map((item) => <option key={item} value={item}>{item}</option>)}</select>
+      </label>
+
+      <label>
+        Produto
+        <input {...register("produto")} placeholder="Produto" />
+      </label>
+
+      <label>
+        SKU
+        <input {...register("sku")} placeholder="SKU" />
+      </label>
+
+      <label>
+        Fabricante
+        <input {...register("fabricante")} placeholder="Fabricante" />
+      </label>
+
+      <label>
+        Transportadora
+        <input {...register("transportadora")} placeholder="Transportadora" />
+      </label>
+
+      <label>
+        Link do pedido
+        <input {...register("linkPedido")} placeholder="https://..." />
+      </label>
+
+      <label>
+        Responsável
+        <select {...register("responsavelId")}>
+          <option value="">Não atribuído</option>
+          {assignableUsers.map((user) => <option key={user.id} value={user.id}>{user.nome}</option>)}
+        </select>
+      </label>
+
+      <label>
+        Status da reclamação
+        <select {...register("statusReclamacao")}>{STATUS_RECLAMACAO.map((item) => <option key={item} value={item}>{item}</option>)}</select>
+      </label>
+
+      <label>
+        Motivo
+        <select {...register("motivo")}>{MOTIVOS.map((item) => <option key={item} value={item}>{item}</option>)}</select>
+      </label>
+
+      <label>
+        Resolução
+        <select {...register("resolucao")} disabled={!canEditSensitive}>
+          <option value="">Sem resolução</option>
+          {RESOLUCOES.map((item) => <option key={item} value={item}>{item}</option>)}
+        </select>
+      </label>
+
+      <label>
+        Status do ticket
+        <select {...register("statusTicket")}>{STATUS_TICKET.map((item) => <option key={item} value={item}>{item}</option>)}</select>
+      </label>
+
+      <label style={{ gridColumn: "1 / -1" }}>
+        Detalhes do cliente
+        <textarea {...register("detalhesCliente")} placeholder="Detalhes do cliente" />
+      </label>
+
+      <label>
+        Valor de reembolso
+        <input {...register("valorReembolso", { valueAsNumber: true })} type="number" step="0.01" placeholder="Valor reembolso" disabled={!canEditSensitive} />
+      </label>
+
+      <label>
+        Valor de coleta
+        <input {...register("valorColeta", { valueAsNumber: true })} type="number" step="0.01" placeholder="Valor coleta" disabled={!canEditSensitive} />
+      </label>
 
       {!canEditSensitive ? <p className="muted" style={{ gridColumn: "1 / -1" }}>Seu perfil não pode editar campos sensíveis (reembolso, coleta, prazo e resolução).</p> : null}
 
-      {(Object.keys(errors).length > 0 || requestError) ? (
+      {Object.keys(errors).length > 0 ? (
         <p style={{ color: "#b91c1c", gridColumn: "1 / -1" }}>
-          {requestError ?? "Verifique os campos obrigatórios e tente novamente."}
+          {Object.keys(typedErrors).map((key) => fieldError(typedErrors, key)).filter(Boolean).join(" | ")}
         </p>
+      ) : null}
+
+      {requestError ? (
+        <p style={{ color: "#b91c1c", gridColumn: "1 / -1" }}>{requestError}</p>
       ) : null}
 
       <button type="submit" className="btn btn-primary" disabled={isSubmitting} style={{ gridColumn: "1 / -1" }}>
