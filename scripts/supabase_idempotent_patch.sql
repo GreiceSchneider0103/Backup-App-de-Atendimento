@@ -48,7 +48,8 @@ ALTER TABLE "Ticket"
   ADD COLUMN IF NOT EXISTS "backupSheetRowNumber" INTEGER,
   ADD COLUMN IF NOT EXISTS "backupSyncStatus" "BackupSyncStatus" NOT NULL DEFAULT 'PENDING',
   ADD COLUMN IF NOT EXISTS "backupLastSyncedAt" TIMESTAMP(3),
-  ADD COLUMN IF NOT EXISTS "backupSyncError" TEXT;
+  ADD COLUMN IF NOT EXISTS "backupSyncError" TEXT,
+  ADD COLUMN IF NOT EXISTS "comentarioInterno" TEXT;
 
 CREATE INDEX IF NOT EXISTS "Ticket_backup_status_idx" ON "Ticket"("backupSyncStatus");
 

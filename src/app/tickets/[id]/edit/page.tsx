@@ -3,8 +3,9 @@ import { TicketForm } from "@/components/forms/ticket-form";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { getTicketById } from "@/lib/services/tickets-service";
 import { TicketFormInput } from "@/lib/validation/ticket";
-import { normalizeCanalMarketplace } from "@/config/domains";
 import { prisma } from "@/lib/db/prisma";
+import { normalizeCanalMarketplace } from "@/config/domains";
+import { formatDateTimeBR, formatEnumLabel } from "@/lib/formatters/display";
 
 async function getTicket(id: string, user: Awaited<ReturnType<typeof requireCurrentUser>>): Promise<{ ok: true; payload: Awaited<ReturnType<typeof getTicketById>> } | { ok: false; message: string }> {
   try {
@@ -34,6 +35,7 @@ function toFormValues(payload: Awaited<ReturnType<typeof getTicketById>>): Parti
     dataReclamacao: payload.dataReclamacao ? payload.dataReclamacao.toISOString() : "",
     motivo: payload.motivo,
     detalhesCliente: payload.detalhesCliente ?? "",
+    comentarioInterno: payload.comentarioInterno ?? "",
     resolucao: payload.resolucao,
     valorReembolso: Number(payload.valorReembolso ?? 0),
     valorColeta: Number(payload.valorColeta ?? 0),
@@ -68,15 +70,16 @@ export default async function EditTicketPage({ params }: { params: Promise<{ id:
             initialValues={toFormValues(result.payload)}
             canEditSensitive={hasPermission(user.perfil, "ticket.update_sensitive")}
             assignableUsers={assignableUsers}
+            cancelHref={`/tickets/${id}`}
           />
 
           <aside className="panel" style={{ alignSelf: "start" }}>
             <h3>Histórico lateral</h3>
             <p><strong>Atualizado por:</strong> {result.payload?.atualizadoPorId ?? "-"}</p>
-            <p><strong>Atualizado em:</strong> {result.payload?.atualizadoEm ? String(result.payload.atualizadoEm).slice(0, 19).replace("T", " ") : "-"}</p>
+            <p><strong>Atualizado em:</strong> {formatDateTimeBR(result.payload?.atualizadoEm)}</p>
             <ul style={{ maxHeight: 420, overflow: "auto", paddingLeft: 16 }}>
               {(Array.isArray(result.payload?.auditoria) ? result.payload.auditoria : []).slice(0, 20).map((item) => (
-                <li key={item.id}>{String(item.dataHora)} — {item.acao} — {item.campo}</li>
+                <li key={item.id}>{formatDateTimeBR(item.dataHora)} — {formatEnumLabel(item.acao)} — {formatEnumLabel(item.campo)}</li>
               ))}
             </ul>
           </aside>

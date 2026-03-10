@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { formatEnumLabel } from "@/lib/formatters/display";
 
 function getTone(value: string) {
   const normalized = value.toUpperCase();
@@ -10,5 +11,5 @@ function getTone(value: string) {
 
 export function StatusBadge({ value }: { value: string }) {
   const tone = getTone(value);
-  return <span className={clsx("badge", `badge-${tone}`)}>{value}</span>;
+  return <span className={clsx("badge", `badge-${tone}`)}>{formatEnumLabel(value)}</span>;
 }

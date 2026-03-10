@@ -43,6 +43,7 @@ model Ticket {
   dataReclamacao   DateTime
   motivo           Motivo
   detalhesCliente  String?
+  comentarioInterno String?
   resolucao        Resolucao?
   valorReembolso   Decimal           @default(0) @db.Decimal(12, 2)
   valorColeta      Decimal           @default(0) @db.Decimal(12, 2)

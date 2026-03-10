@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { CANAIS_MARKETPLACE, canalMarketplaceLabel, EMPRESAS, MOTIVOS, RESOLUCOES, STATUS_RECLAMACAO, STATUS_TICKET } from "@/config/domains";
+import { CANAIS_MARKETPLACE, EMPRESAS, MOTIVOS, RESOLUCOES, STATUS_RECLAMACAO, STATUS_TICKET } from "@/config/domains";
+import { formatEnumLabel } from "@/lib/formatters/display";
 import { TicketFormInput, ticketFormSchema } from "@/lib/validation/ticket";
 
 type AssignableUser = { id: string; nome: string };
@@ -14,6 +15,7 @@ type TicketFormProps = {
   initialValues?: Partial<TicketFormInput>;
   canEditSensitive?: boolean;
   assignableUsers?: AssignableUser[];
+  cancelHref?: "/tickets" | `/tickets/${string}`;
 };
 
 function toDateInput(value?: string | null) {
@@ -25,7 +27,7 @@ function fieldError(errors: Record<string, { message?: string }>, key: string) {
   return errors[key]?.message;
 }
 
-export function TicketForm({ ticketId, initialValues, canEditSensitive = true, assignableUsers = [] }: TicketFormProps) {
+export function TicketForm({ ticketId, initialValues, canEditSensitive = true, assignableUsers = [], cancelHref }: TicketFormProps) {
   const router = useRouter();
   const [requestError, setRequestError] = useState<string | null>(null);
 
@@ -52,6 +54,7 @@ export function TicketForm({ ticketId, initialValues, canEditSensitive = true, a
       dataReclamacao: toDateInput(initialValues?.dataReclamacao),
       motivo: initialValues?.motivo ?? "DESISTENCIA",
       detalhesCliente: initialValues?.detalhesCliente ?? "",
+      comentarioInterno: initialValues?.comentarioInterno ?? "",
       resolucao: initialValues?.resolucao ?? null,
       valorReembolso: Number(initialValues?.valorReembolso ?? 0),
       valorColeta: Number(initialValues?.valorColeta ?? 0),
@@ -74,6 +77,7 @@ export function TicketForm({ ticketId, initialValues, canEditSensitive = true, a
       fabricante: values.fabricante || "",
       transportadora: values.transportadora || "",
       detalhesCliente: values.detalhesCliente || "",
+      comentarioInterno: values.comentarioInterno || "",
       responsavelId: values.responsavelId || null,
       resolucao: values.resolucao || null
     };
@@ -143,13 +147,13 @@ export function TicketForm({ ticketId, initialValues, canEditSensitive = true, a
       <label>
         Canal / Marketplace
         <select {...register("canalMarketplace")}>
-          {CANAIS_MARKETPLACE.map((item) => <option key={item} value={item}>{canalMarketplaceLabel(item)}</option>)}
+          {CANAIS_MARKETPLACE.map((item) => <option key={item} value={item}>{formatEnumLabel(item)}</option>)}
         </select>
       </label>
 
       <label>
         Empresa
-        <select {...register("empresa")}>{EMPRESAS.map((item) => <option key={item} value={item}>{item}</option>)}</select>
+        <select {...register("empresa")}>{EMPRESAS.map((item) => <option key={item} value={item}>{formatEnumLabel(item)}</option>)}</select>
       </label>
 
       <label>
@@ -187,30 +191,35 @@ export function TicketForm({ ticketId, initialValues, canEditSensitive = true, a
 
       <label>
         Status da reclamação
-        <select {...register("statusReclamacao")}>{STATUS_RECLAMACAO.map((item) => <option key={item} value={item}>{item}</option>)}</select>
+        <select {...register("statusReclamacao")}>{STATUS_RECLAMACAO.map((item) => <option key={item} value={item}>{formatEnumLabel(item)}</option>)}</select>
       </label>
 
       <label>
         Motivo
-        <select {...register("motivo")}>{MOTIVOS.map((item) => <option key={item} value={item}>{item}</option>)}</select>
+        <select {...register("motivo")}>{MOTIVOS.map((item) => <option key={item} value={item}>{formatEnumLabel(item)}</option>)}</select>
       </label>
 
       <label>
         Resolução
         <select {...register("resolucao")} disabled={!canEditSensitive}>
           <option value="">Sem resolução</option>
-          {RESOLUCOES.map((item) => <option key={item} value={item}>{item}</option>)}
+          {RESOLUCOES.map((item) => <option key={item} value={item}>{formatEnumLabel(item)}</option>)}
         </select>
       </label>
 
       <label>
         Status do ticket
-        <select {...register("statusTicket")}>{STATUS_TICKET.map((item) => <option key={item} value={item}>{item}</option>)}</select>
+        <select {...register("statusTicket")}>{STATUS_TICKET.map((item) => <option key={item} value={item}>{formatEnumLabel(item)}</option>)}</select>
       </label>
 
       <label style={{ gridColumn: "1 / -1" }}>
         Detalhes do cliente
         <textarea {...register("detalhesCliente")} placeholder="Detalhes do cliente" />
+      </label>
+
+      <label style={{ gridColumn: "1 / -1" }}>
+        Comentário interno
+        <textarea {...register("comentarioInterno")} placeholder="Observações internas para acompanhamento do ticket" />
       </label>
 
       <label>
@@ -219,8 +228,8 @@ export function TicketForm({ ticketId, initialValues, canEditSensitive = true, a
       </label>
 
       <label>
-        Valor de coleta
-        <input {...register("valorColeta", { valueAsNumber: true })} type="number" step="0.01" placeholder="Valor coleta" disabled={!canEditSensitive} />
+        Valor de coleta, envio ou peças
+        <input {...register("valorColeta", { valueAsNumber: true })} type="number" step="0.01" placeholder="Valor coleta, envio ou peças" disabled={!canEditSensitive} />
       </label>
 
       {!canEditSensitive ? <p className="muted" style={{ gridColumn: "1 / -1" }}>Seu perfil não pode editar campos sensíveis (reembolso, coleta, prazo e resolução).</p> : null}
@@ -235,9 +244,12 @@ export function TicketForm({ ticketId, initialValues, canEditSensitive = true, a
         <p style={{ color: "#b91c1c", gridColumn: "1 / -1" }}>{requestError}</p>
       ) : null}
 
-      <button type="submit" className="btn btn-primary" disabled={isSubmitting} style={{ gridColumn: "1 / -1" }}>
-        {isSubmitting ? "Salvando..." : "Salvar"}
-      </button>
+      <div style={{ gridColumn: "1 / -1", display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
+        {cancelHref ? <button type="button" className="btn btn-secondary" onClick={() => router.push(cancelHref)}>Cancelar</button> : null}
+        <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+          {isSubmitting ? "Salvando..." : "Salvar"}
+        </button>
+      </div>
     </form>
   );
 }

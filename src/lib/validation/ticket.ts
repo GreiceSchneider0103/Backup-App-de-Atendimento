@@ -22,6 +22,7 @@ export const ticketSchema = z.object({
   dataReclamacao: isoDateOrDateString,
   motivo: z.enum(MOTIVOS),
   detalhesCliente: z.string().optional().or(z.literal("")),
+  comentarioInterno: z.string().optional().or(z.literal("")),
   resolucao: z.enum(RESOLUCOES).optional().nullable(),
   valorReembolso: z.coerce.number().min(0).default(0),
   valorColeta: z.coerce.number().min(0).default(0),
@@ -38,6 +39,7 @@ export const ticketFormSchema = ticketSchema.extend({
   fabricante: z.string().optional(),
   transportadora: z.string().optional(),
   detalhesCliente: z.string().optional(),
+  comentarioInterno: z.string().optional(),
   resolucao: z.enum(RESOLUCOES).or(z.literal("")).optional().nullable(),
   responsavelId: z.string().uuid("Responsável inválido").or(z.literal("")).optional().nullable()
 });

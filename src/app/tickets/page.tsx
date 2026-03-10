@@ -1,10 +1,11 @@
 import { requireCurrentUser } from "@/lib/auth/require-user";
 import Link from "next/link";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { CANAIS_MARKETPLACE, canalMarketplaceLabel, EMPRESAS, MOTIVOS, STATUS_RECLAMACAO, STATUS_TICKET } from "@/config/domains";
+import { CANAIS_MARKETPLACE, EMPRESAS, MOTIVOS, STATUS_RECLAMACAO, STATUS_TICKET } from "@/config/domains";
 import { TicketListResponse } from "@/lib/contracts";
 import { listTickets } from "@/lib/services/tickets-service";
 import { ticketFiltersSchema } from "@/lib/validation/ticket";
+import { formatDateBR, formatEnumLabel } from "@/lib/formatters/display";
 
 async function getTickets(query: Record<string, string | undefined>, user: Awaited<ReturnType<typeof requireCurrentUser>>): Promise<{ data: TicketListResponse["data"]; pagination: TicketListResponse["pagination"]; error: string | null }> {
   const parsed = ticketFiltersSchema.safeParse(query);
@@ -32,36 +33,33 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
 
   return (
     <section className="page">
-      <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <div>
           <h1>Lista de tickets</h1>
           <p className="muted">Visualização operacional com filtros e status de SLA.</p>
         </div>
-        <Link href="/tickets/new" className="btn btn-primary">Criar ticket</Link>
+        <Link href="/tickets/new" className="btn btn-primary" style={{ whiteSpace: "nowrap" }}>Criar ticket</Link>
       </div>
 
       <form className="panel form-grid cols-4">
         <input name="search" placeholder="Busca por cliente, venda, produto" defaultValue={query.search} />
         <select name="canalMarketplace" defaultValue={query.canalMarketplace ?? ""}>
           <option value="">Todos os marketplaces</option>
-          {CANAIS_MARKETPLACE.map((item) => <option key={item} value={item}>{canalMarketplaceLabel(item)}</option>)}
+          {CANAIS_MARKETPLACE.map((item) => <option key={item} value={item}>{formatEnumLabel(item)}</option>)}
         </select>
         <select name="empresa" defaultValue={query.empresa ?? ""}>
           <option value="">Todas as empresas</option>
-          {EMPRESAS.map((item) => <option key={item} value={item}>{item}</option>)}
+          {EMPRESAS.map((item) => <option key={item} value={item}>{formatEnumLabel(item)}</option>)}
         </select>
         <select name="statusTicket" defaultValue={query.statusTicket ?? ""}>
           <option value="">Todos os status de ticket</option>
-          {STATUS_TICKET.map((item) => <option key={item} value={item}>{item}</option>)}
-        </select>
+          {STATUS_TICKET.map((item) => <option key={item} value={item}>{formatEnumLabel(item)}</option>)}</select>
         <select name="statusReclamacao" defaultValue={query.statusReclamacao ?? ""}>
           <option value="">Todos os status de reclamação</option>
-          {STATUS_RECLAMACAO.map((item) => <option key={item} value={item}>{item}</option>)}
-        </select>
+          {STATUS_RECLAMACAO.map((item) => <option key={item} value={item}>{formatEnumLabel(item)}</option>)}</select>
         <select name="motivo" defaultValue={query.motivo ?? ""}>
           <option value="">Todos os motivos</option>
-          {MOTIVOS.map((item) => <option key={item} value={item}>{item}</option>)}
-        </select>
+          {MOTIVOS.map((item) => <option key={item} value={item}>{formatEnumLabel(item)}</option>)}</select>
         <input name="responsavelId" placeholder="Responsável (id)" defaultValue={query.responsavelId} />
         <input name="criadoPorId" placeholder="Criado por (id)" defaultValue={query.criadoPorId} />
         <input name="startDate" type="date" defaultValue={query.startDate} />
@@ -104,7 +102,7 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
                   <td><StatusBadge value={item.motivo} /></td>
                   <td><StatusBadge value={item.statusTicket} /></td>
                   <td><StatusBadge value={item.statusReclamacao} /></td>
-                  <td>{item.prazoConclusao ? String(item.prazoConclusao).slice(0, 10) : "-"}</td>
+                  <td>{formatDateBR(item.prazoConclusao as unknown as string)}</td>
                   <td><StatusBadge value={item.slaStatus} /></td>
                   <td>{Number(item.custosTotais).toFixed(2)}</td>
                 </tr>

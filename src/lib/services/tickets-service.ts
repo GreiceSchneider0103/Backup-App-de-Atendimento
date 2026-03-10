@@ -209,6 +209,7 @@ export async function createTicket(input: TicketInput, userId: string) {
       fabricante: normalizeOptionalText(input.fabricante),
       transportadora: normalizeOptionalText(input.transportadora),
       detalhesCliente: normalizeOptionalText(input.detalhesCliente),
+      comentarioInterno: normalizeOptionalText(input.comentarioInterno),
       responsavelId: normalizeOptionalText(input.responsavelId),
       resolucao: input.resolucao ?? null,
       slaStatus: calculateSla(input.statusTicket, prazoConclusao)
@@ -256,6 +257,7 @@ export async function updateTicket(id: string, payload: Partial<TicketInput>, us
       fabricante: payload.fabricante !== undefined ? normalizeOptionalText(payload.fabricante) : undefined,
       transportadora: payload.transportadora !== undefined ? normalizeOptionalText(payload.transportadora) : undefined,
       detalhesCliente: payload.detalhesCliente !== undefined ? normalizeOptionalText(payload.detalhesCliente) : undefined,
+      comentarioInterno: payload.comentarioInterno !== undefined ? normalizeOptionalText(payload.comentarioInterno) : undefined,
       responsavelId: payload.responsavelId !== undefined ? normalizeOptionalText(payload.responsavelId) : undefined,
       resolucao: payload.resolucao !== undefined ? (payload.resolucao ?? null) : undefined,
       prazoConclusao: resolvedPrazoConclusao,
