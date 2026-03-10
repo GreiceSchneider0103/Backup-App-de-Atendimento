@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { STATUS_TICKET } from "@/config/domains";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Ticket } from "@prisma/client";
 
 const toneByStatus: Record<string, string> = {
   ABERTO: "#3b82f6",
@@ -14,7 +15,7 @@ const toneByStatus: Record<string, string> = {
   CONCLUIDO: "#16a34a"
 };
 
-export function KanbanBoard({ initialItems }: { initialItems: any[] }) {
+export function KanbanBoard({ initialItems }: { initialItems: Ticket[] }) {
   const [items, setItems] = useState(Array.isArray(initialItems) ? initialItems : []);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,7 +33,7 @@ export function KanbanBoard({ initialItems }: { initialItems: any[] }) {
       return;
     }
 
-    setItems((prev) => prev.map((item) => (item.id === ticketId ? { ...item, statusTicket } : item)));
+    setItems((prev) => prev.map((item) => (item.id === ticketId ? { ...item, statusTicket: statusTicket as Ticket["statusTicket"] } : item)));
   }
 
   return (
@@ -41,7 +42,7 @@ export function KanbanBoard({ initialItems }: { initialItems: any[] }) {
       <div style={{ overflowX: "auto", paddingBottom: 8 }}>
         <div style={{ display: "flex", gap: 12, minWidth: 1260 }}>
           {STATUS_TICKET.map((status) => {
-            const columnItems = items.filter((ticket: any) => ticket.statusTicket === status);
+            const columnItems = items.filter((ticket) => ticket.statusTicket === status);
             return (
               <div key={status} style={{ width: 300, background: "#f8fafc", borderRadius: 12 }}>
                 <div style={{ background: toneByStatus[status] ?? "#64748b", color: "#fff", padding: 12, borderTopLeftRadius: 12, borderTopRightRadius: 12 }}>
@@ -51,7 +52,7 @@ export function KanbanBoard({ initialItems }: { initialItems: any[] }) {
 
                 <div style={{ padding: 12, minHeight: 420, display: "grid", gap: 10 }}>
                   {columnItems.length === 0 ? <div className="empty-state">Nenhum ticket nesta coluna</div> : null}
-                  {columnItems.map((ticket: any) => (
+                  {columnItems.map((ticket) => (
                     <article key={ticket.id} className="card" style={{ margin: 0 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <strong>{ticket.id.slice(0, 8)}</strong>
