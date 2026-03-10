@@ -34,11 +34,12 @@ export const ticketFormSchema = ticketSchema.extend({
   dataCompra: z.string().min(1, "Data de compra é obrigatória"),
   dataReclamacao: z.string().min(1, "Data da reclamação é obrigatória"),
   prazoConclusao: z.string().optional().nullable(),
-  responsavelId: z.string().optional().nullable(),
   linkPedido: z.string().optional(),
   fabricante: z.string().optional(),
   transportadora: z.string().optional(),
-  detalhesCliente: z.string().optional()
+  detalhesCliente: z.string().optional(),
+  resolucao: z.enum(RESOLUCOES).or(z.literal("")).optional().nullable(),
+  responsavelId: z.string().uuid("Responsável inválido").or(z.literal("")).optional().nullable()
 });
 
 export const ticketFiltersSchema = z.object({

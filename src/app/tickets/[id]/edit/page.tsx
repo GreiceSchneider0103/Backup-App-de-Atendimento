@@ -35,7 +35,7 @@ export default async function EditTicketPage({ params }: { params: Promise<{ id:
             <p><strong>Atualizado por:</strong> {payload?.atualizadoPorId ?? "-"}</p>
             <p><strong>Atualizado em:</strong> {payload?.atualizadoEm ? String(payload.atualizadoEm).slice(0, 19).replace("T", " ") : "-"}</p>
             <ul style={{ maxHeight: 420, overflow: "auto", paddingLeft: 16 }}>
-              {(Array.isArray(payload?.auditoria) ? payload.auditoria : []).slice(0, 20).map((item: any) => (
+              {(Array.isArray(payload?.auditoria) ? payload.auditoria : []).slice(0, 20).map((item: { id: string; dataHora: string; acao: string; campo: string }) => (
                 <li key={item.id}>{item.dataHora} — {item.acao} — {item.campo}</li>
               ))}
             </ul>

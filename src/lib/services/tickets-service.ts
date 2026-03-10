@@ -3,12 +3,18 @@ import { prisma } from "@/lib/db/prisma";
 import { registerTicketAudit } from "@/lib/audit/ticket-audit";
 import { TicketFiltersInput, TicketInput } from "@/lib/validation/ticket";
 import { getTicketScopeWhere, hasPermission } from "@/lib/rbac/permissions";
-import { calculateSla } from "@/lib/utils/sla";
+import { assertSlaConsistency, calculateSla } from "@/lib/utils/sla";
 import { ForbiddenError } from "@/lib/errors";
 import { appendTicketBackupRow, getGoogleSheetsBackupConfigError, isGoogleSheetsBackupEnabled, updateTicketBackupRow } from "@/lib/integrations/google-sheets-backup";
 import { logError } from "@/lib/logger";
 
 const sensitiveFields = ["valorReembolso", "valorColeta", "prazoConclusao", "resolucao"] as const;
+
+function normalizeOptionalText(value?: string | null) {
+  if (value === undefined || value === null) return null;
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : null;
+}
 
 function assertCanEditFields(user: Usuario, payload: Partial<TicketInput>) {
   const touchingSensitive = sensitiveFields.some((field) => payload[field] !== undefined);
@@ -183,6 +189,9 @@ export async function listTickets(
 }
 
 export async function createTicket(input: TicketInput, userId: string) {
+  const prazoConclusao = input.prazoConclusao ? new Date(input.prazoConclusao) : null;
+  assertSlaConsistency(input.statusTicket, prazoConclusao);
+
   const ticket = await prisma.ticket.create({
     data: {
       ...input,
@@ -190,13 +199,19 @@ export async function createTicket(input: TicketInput, userId: string) {
       dataReclamacao: new Date(input.dataReclamacao),
       mesReclamacao: new Date(input.dataReclamacao).getUTCMonth() + 1,
       anoReclamacao: new Date(input.dataReclamacao).getUTCFullYear(),
-      prazoConclusao: input.prazoConclusao ? new Date(input.prazoConclusao) : null,
+      prazoConclusao,
       valorReembolso: new Prisma.Decimal(input.valorReembolso),
       valorColeta: new Prisma.Decimal(input.valorColeta),
       custosTotais: new Prisma.Decimal(input.valorReembolso + input.valorColeta),
       criadoPorId: userId,
       atualizadoPorId: userId,
-      slaStatus: calculateSla(input.statusTicket, input.prazoConclusao ? new Date(input.prazoConclusao) : null)
+      linkPedido: normalizeOptionalText(input.linkPedido),
+      fabricante: normalizeOptionalText(input.fabricante),
+      transportadora: normalizeOptionalText(input.transportadora),
+      detalhesCliente: normalizeOptionalText(input.detalhesCliente),
+      responsavelId: normalizeOptionalText(input.responsavelId),
+      resolucao: input.resolucao ?? null,
+      slaStatus: calculateSla(input.statusTicket, prazoConclusao)
     }
   });
 
@@ -208,7 +223,7 @@ export async function createTicket(input: TicketInput, userId: string) {
 
 export async function getTicketById(id: string, user: Usuario) {
   const ticket = await prisma.ticket.findFirst({
-    where: { id, ...getTicketScopeWhere(user) },
+    where: { id, ativo: true, ...getTicketScopeWhere(user) },
     include: { auditoria: { orderBy: { dataHora: "desc" }, take: 100 } }
   });
 
@@ -217,8 +232,14 @@ export async function getTicketById(id: string, user: Usuario) {
 }
 
 export async function updateTicket(id: string, payload: Partial<TicketInput>, user: Usuario) {
-  const before = await prisma.ticket.findFirstOrThrow({ where: { id, ...getTicketScopeWhere(user) } });
+  const before = await prisma.ticket.findFirstOrThrow({ where: { id, ativo: true, ...getTicketScopeWhere(user) } });
   assertCanEditFields(user, payload);
+
+  const resolvedPrazoConclusao = payload.prazoConclusao !== undefined
+    ? (payload.prazoConclusao ? new Date(payload.prazoConclusao) : null)
+    : before.prazoConclusao;
+  const resolvedStatusTicket = payload.statusTicket ?? before.statusTicket;
+  assertSlaConsistency(resolvedStatusTicket, resolvedPrazoConclusao);
 
   const updated = await prisma.ticket.update({
     where: { id },
@@ -231,10 +252,14 @@ export async function updateTicket(id: string, payload: Partial<TicketInput>, us
             anoReclamacao: new Date(payload.dataReclamacao).getUTCFullYear()
           }
         : {}),
-      slaStatus: calculateSla(
-        payload.statusTicket ?? before.statusTicket,
-        payload.prazoConclusao ? new Date(payload.prazoConclusao) : before.prazoConclusao
-      ),
+      linkPedido: payload.linkPedido !== undefined ? normalizeOptionalText(payload.linkPedido) : undefined,
+      fabricante: payload.fabricante !== undefined ? normalizeOptionalText(payload.fabricante) : undefined,
+      transportadora: payload.transportadora !== undefined ? normalizeOptionalText(payload.transportadora) : undefined,
+      detalhesCliente: payload.detalhesCliente !== undefined ? normalizeOptionalText(payload.detalhesCliente) : undefined,
+      responsavelId: payload.responsavelId !== undefined ? normalizeOptionalText(payload.responsavelId) : undefined,
+      resolucao: payload.resolucao !== undefined ? (payload.resolucao ?? null) : undefined,
+      prazoConclusao: resolvedPrazoConclusao,
+      slaStatus: calculateSla(resolvedStatusTicket, resolvedPrazoConclusao),
       ...(payload.valorReembolso !== undefined || payload.valorColeta !== undefined
         ? {
             custosTotais: new Prisma.Decimal(
