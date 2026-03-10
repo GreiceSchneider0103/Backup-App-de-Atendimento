@@ -8,12 +8,22 @@ export default async function AdminPage() {
   const user = await requireCurrentUser();
   assertPermission(user.perfil, "user.manage");
 
-  const [users, totalTickets, activeTickets, failedBackups] = await Promise.all([
-    prisma.usuario.findMany({ orderBy: { criadoEm: "desc" } }),
-    prisma.ticket.count(),
-    prisma.ticket.count({ where: { ativo: true } }),
-    prisma.ticket.count({ where: { backupSyncStatus: "FAILED" } })
-  ]);
+  let users: Awaited<ReturnType<typeof prisma.usuario.findMany>> = [];
+  let totalTickets = 0;
+  let activeTickets = 0;
+  let failedBackups = 0;
+  let dataError: string | null = null;
+
+  try {
+    [users, totalTickets, activeTickets, failedBackups] = await Promise.all([
+      prisma.usuario.findMany({ orderBy: { criadoEm: "desc" } }),
+      prisma.ticket.count(),
+      prisma.ticket.count({ where: { ativo: true } }),
+      prisma.ticket.count({ where: { backupSyncStatus: "FAILED" } })
+    ]);
+  } catch (error) {
+    dataError = error instanceof Error ? error.message : "Falha ao carregar métricas administrativas";
+  }
 
   return (
     <section className="page">
@@ -21,6 +31,14 @@ export default async function AdminPage() {
         <h1>Administração</h1>
         <p className="muted">Gestão de usuários, permissões e saúde operacional do sistema.</p>
       </div>
+
+      {dataError ? (
+        <div className="alert alert-error">
+          {dataError}
+          <br />
+          Aplique o patch SQL de alinhamento do banco para liberar as métricas de backup e auditoria.
+        </div>
+      ) : null}
 
       <div className="grid grid-4">
         <article className="card"><strong>Total de usuários</strong><p className="metric-value">{users.length}</p></article>
@@ -35,7 +53,7 @@ export default async function AdminPage() {
         <Link className="btn btn-primary" href="/dashboard">Abrir dashboard</Link>
       </div>
 
-      <UsersAdmin initialUsers={users} />
+      <UsersAdmin initialUsers={users} initialError={dataError} />
     </section>
   );
 }
