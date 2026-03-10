@@ -15,8 +15,12 @@ export async function withApiHandler<T>(handler: () => Promise<T>) {
     }
 
     if (error instanceof ZodError) {
+      const firstIssue = error.issues[0];
+      const fieldPath = firstIssue?.path?.join(".") ?? "payload";
+      const fieldMessage = firstIssue?.message ?? "valor inválido";
+
       return NextResponse.json(
-        { message: "Payload inválido", issues: error.issues },
+        { message: `Payload inválido em ${fieldPath}: ${fieldMessage}`, issues: error.issues },
         { status: 422 }
       );
     }

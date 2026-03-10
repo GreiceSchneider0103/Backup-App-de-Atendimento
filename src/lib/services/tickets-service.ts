@@ -168,7 +168,7 @@ export async function listTickets(
       orderBy: { [query.orderBy]: query.orderDir },
       skip: (query.page - 1) * query.pageSize,
       take: query.pageSize,
-      include: { criadoPor: true, atualizadoPor: true }
+      include: { criadoPor: true, atualizadoPor: true, responsavel: { select: { id: true, nome: true } } }
     }),
     prisma.ticket.count({ where })
   ]);
@@ -224,7 +224,7 @@ export async function createTicket(input: TicketInput, userId: string) {
 export async function getTicketById(id: string, user: Usuario) {
   const ticket = await prisma.ticket.findFirst({
     where: { id, ativo: true, ...getTicketScopeWhere(user) },
-    include: { auditoria: { orderBy: { dataHora: "desc" }, take: 100 } }
+    include: { auditoria: { orderBy: { dataHora: "desc" }, take: 100 }, responsavel: { select: { id: true, nome: true } } }
   });
 
   if (!ticket) throw new ForbiddenError("Ticket não encontrado ou sem acesso");

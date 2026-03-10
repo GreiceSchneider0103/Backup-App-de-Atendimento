@@ -3,6 +3,7 @@ import { TicketForm } from "@/components/forms/ticket-form";
 import { hasPermission } from "@/lib/rbac/permissions";
 import { getTicketById } from "@/lib/services/tickets-service";
 import { TicketFormInput } from "@/lib/validation/ticket";
+import { normalizeCanalMarketplace } from "@/config/domains";
 import { prisma } from "@/lib/db/prisma";
 
 async function getTicket(id: string, user: Awaited<ReturnType<typeof requireCurrentUser>>): Promise<{ ok: true; payload: Awaited<ReturnType<typeof getTicketById>> } | { ok: false; message: string }> {
@@ -23,7 +24,7 @@ function toFormValues(payload: Awaited<ReturnType<typeof getTicketById>>): Parti
     linkPedido: payload.linkPedido ?? "",
     uf: payload.uf,
     cpf: payload.cpf,
-    canalMarketplace: (payload.canalMarketplace as TicketFormInput["canalMarketplace"]) ?? "OUTRO",
+    canalMarketplace: normalizeCanalMarketplace(payload.canalMarketplace) ?? "OUTRO",
     empresa: payload.empresa,
     produto: payload.produto,
     sku: payload.sku,

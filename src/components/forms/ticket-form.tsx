@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { CANAIS_MARKETPLACE, EMPRESAS, MOTIVOS, RESOLUCOES, STATUS_RECLAMACAO, STATUS_TICKET } from "@/config/domains";
+import { CANAIS_MARKETPLACE, canalMarketplaceLabel, EMPRESAS, MOTIVOS, RESOLUCOES, STATUS_RECLAMACAO, STATUS_TICKET } from "@/config/domains";
 import { TicketFormInput, ticketFormSchema } from "@/lib/validation/ticket";
 
 type AssignableUser = { id: string; nome: string };
@@ -143,7 +143,7 @@ export function TicketForm({ ticketId, initialValues, canEditSensitive = true, a
       <label>
         Canal / Marketplace
         <select {...register("canalMarketplace")}>
-          {CANAIS_MARKETPLACE.map((item) => <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}
+          {CANAIS_MARKETPLACE.map((item) => <option key={item} value={item}>{canalMarketplaceLabel(item)}</option>)}
         </select>
       </label>
 

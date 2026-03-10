@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CANAIS_MARKETPLACE, EMPRESAS, MOTIVOS, RESOLUCOES, STATUS_RECLAMACAO, STATUS_TICKET } from "@/config/domains";
+import { CANAIS_MARKETPLACE, EMPRESAS, MOTIVOS, normalizeCanalMarketplace, RESOLUCOES, STATUS_RECLAMACAO, STATUS_TICKET } from "@/config/domains";
 
 const isoDateOrDateString = z.string().refine((value) => !Number.isNaN(Date.parse(value)), {
   message: "Data inválida"
@@ -12,7 +12,7 @@ export const ticketSchema = z.object({
   linkPedido: z.string().url().optional().or(z.literal("")),
   uf: z.string().length(2),
   cpf: z.string().min(11).max(14),
-  canalMarketplace: z.enum(CANAIS_MARKETPLACE, { message: "Marketplace inválido" }),
+  canalMarketplace: z.preprocess((value) => normalizeCanalMarketplace(typeof value === "string" ? value : undefined), z.enum(CANAIS_MARKETPLACE, { message: "Marketplace inválido" })),
   empresa: z.enum(EMPRESAS),
   produto: z.string().min(2),
   sku: z.string().min(2),

@@ -72,7 +72,7 @@ export default async function TicketDetail({ params }: { params: Promise<{ id: s
               <p><strong>Reembolso:</strong> {Number(ticket.valorReembolso ?? 0).toFixed(2)}</p>
               <p><strong>Coleta:</strong> {Number(ticket.valorColeta ?? 0).toFixed(2)}</p>
               <p><strong>Custos totais:</strong> {Number(ticket.custosTotais ?? 0).toFixed(2)}</p>
-              <p><strong>Responsável:</strong> {ticket.responsavelId ?? "-"}</p>
+              <p><strong>Responsável:</strong> {ticket.responsavel?.nome ?? "Não atribuído"}</p>
               <p><strong>Criado em:</strong> {dateText(ticket.criadoEm as unknown as string)}</p>
               <p><strong>Atualizado em:</strong> {dateText(ticket.atualizadoEm as unknown as string)}</p>
               <p><strong>Atualizado por:</strong> {ticket.atualizadoPorId ?? "-"}</p>
