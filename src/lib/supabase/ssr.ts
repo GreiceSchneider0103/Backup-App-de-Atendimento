@@ -9,6 +9,23 @@ type ServerCookieApi = {
 
 const COOKIE_CHUNK_SIZE = 3800;
 
+function isValidSupabaseSessionValue(key: string, value: string) {
+  if (!key.includes("-auth-token")) return true;
+
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+
+  // Supabase session storage must be structured JSON for auth-token keys.
+  if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) return false;
+
+  try {
+    JSON.parse(trimmed);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function parseCookieHeader(cookieHeader: string) {
   const out: Record<string, string> = {};
   if (!cookieHeader) return out;
@@ -81,7 +98,9 @@ function createStorageFromServerCookies(cookiesApi: ServerCookieApi) {
       const all = cookiesApi.getAll ? cookiesApi.getAll() : [];
       const records = getCookieRecordsByKey(all, key);
       if (!records.length) return null;
-      return records.map((item) => item.value).join("");
+      const joined = records.map((item) => item.value).join("");
+      if (!isValidSupabaseSessionValue(key, joined)) return null;
+      return joined;
     },
     setItem(key: string, value: string) {
       if (!cookiesApi.setAll) return;
@@ -115,7 +134,9 @@ function createStorageFromBrowserCookies() {
         });
 
       if (!chunkKeys.length) return null;
-      return chunkKeys.map((cookieKey) => all[cookieKey]).join("");
+      const joined = chunkKeys.map((cookieKey) => all[cookieKey]).join("");
+      if (!isValidSupabaseSessionValue(key, joined)) return null;
+      return joined;
     },
     setItem(key: string, value: string) {
       if (typeof document === "undefined") return;

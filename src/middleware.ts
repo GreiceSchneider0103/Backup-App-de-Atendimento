@@ -1,11 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@/lib/supabase/ssr";
 
-const publicRoutes = ["/login", "/auth/callback", "/api/health", "/indisponivel"];
+const publicRoutes = ["/", "/login", "/auth/callback", "/api/health", "/indisponivel"];
 const AUTH_TIMEOUT_MS = Number(process.env.AUTH_TIMEOUT_MS ?? 8000);
 
 function hasSupabaseEnv() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+}
+
+function isPublicRoute(pathname: string) {
+  return publicRoutes.some((route) => {
+    if (route === "/") return pathname === "/";
+    return pathname === route || pathname.startsWith(`${route}/`);
+  });
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
@@ -33,7 +40,7 @@ function authUnavailableResponse(request: NextRequest) {
 }
 
 export async function middleware(request: NextRequest) {
-  if (publicRoutes.some((route) => request.nextUrl.pathname.startsWith(route))) {
+  if (isPublicRoute(request.nextUrl.pathname)) {
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set("x-route-access", "public");
 

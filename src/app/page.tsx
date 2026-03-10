@@ -1,9 +1,12 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth/session";
-import { ServiceUnavailableError, UnauthorizedError } from "@/lib/errors";
 
 function hasSupabaseEnv() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+}
+
+function hasSupabaseSessionCookie(cookieNames: string[]) {
+  return cookieNames.some((name) => name.includes("-auth-token"));
 }
 
 export default async function Home() {
@@ -11,18 +14,12 @@ export default async function Home() {
     redirect("/login");
   }
 
-  try {
-    await getCurrentUser();
+  const cookieStore = await cookies();
+  const cookieNames = cookieStore.getAll().map((cookie) => cookie.name);
+
+  if (hasSupabaseSessionCookie(cookieNames)) {
     redirect("/dashboard");
-  } catch (error) {
-    if (error instanceof UnauthorizedError) {
-      redirect("/login");
-    }
-
-    if (error instanceof ServiceUnavailableError) {
-      redirect("/indisponivel");
-    }
-
-    throw error;
   }
+
+  redirect("/login");
 }
