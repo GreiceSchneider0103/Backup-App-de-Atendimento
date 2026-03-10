@@ -1,5 +1,6 @@
 import "./globals.css";
 import { ReactNode } from "react";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { SidebarNav } from "@/components/ui/sidebar-nav";
@@ -26,9 +27,11 @@ function getInitials(name?: string) {
 export default async function RootLayout({ children }: { children: ReactNode }) {
   let currentUser: Awaited<ReturnType<typeof getCurrentUser>> | null = null;
   let infraUnavailable = false;
+  const requestHeaders = await headers();
+  const isPublicRoute = requestHeaders.get("x-route-access") === "public";
 
   try {
-    if (hasSupabaseEnv()) {
+    if (hasSupabaseEnv() && !isPublicRoute) {
       currentUser = await getCurrentUser();
     }
   } catch (error) {
@@ -41,7 +44,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     }
   }
 
-  if (infraUnavailable) {
+  if (infraUnavailable && !isPublicRoute) {
     return (
       <html lang="pt-BR">
         <body>
