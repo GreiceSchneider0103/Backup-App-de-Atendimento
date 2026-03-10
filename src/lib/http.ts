@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
 import { AppError } from "@/lib/errors";
 import { logError } from "@/lib/logger";
@@ -18,6 +19,10 @@ export async function withApiHandler<T>(handler: () => Promise<T>) {
         { message: "Payload inválido", issues: error.issues },
         { status: 422 }
       );
+    }
+
+    if (error instanceof Prisma.PrismaClientInitializationError) {
+      return NextResponse.json({ message: "Serviço temporariamente indisponível", code: "SERVICE_UNAVAILABLE" }, { status: 503 });
     }
 
     logError("Unhandled API error", { error: String(error) });
