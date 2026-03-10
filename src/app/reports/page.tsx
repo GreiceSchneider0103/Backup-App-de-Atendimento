@@ -1,25 +1,29 @@
-import { requireCurrentUser } from "@/lib/auth/require-user";
-import { fetchInternalApi } from "@/lib/http/server-fetch";
 import Link from "next/link";
+import { requireCurrentUser } from "@/lib/auth/require-user";
 import { EMPRESAS } from "@/config/domains";
 import { ReportsResponse } from "@/lib/contracts";
+import { assertPermission } from "@/lib/rbac/permissions";
+import { ticketFiltersSchema } from "@/lib/validation/ticket";
+import { getReportsData } from "@/lib/services/reports-service";
 
-async function getReport(query: Record<string, string | undefined>): Promise<{ totals: ReportsResponse["totals"]; items: ReportsResponse["items"]; meta: ReportsResponse["meta"] | null; error: string | null }> {
-  const params = new URLSearchParams();
-  Object.entries(query).forEach(([k, v]) => v && params.set(k, v));
-  const response = await fetchInternalApi(`/api/reports?${params.toString()}`);
-
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    return { totals: { totalTickets: 0, totalCustos: 0, totalReembolso: 0, totalColeta: 0 }, items: [], meta: null, error: payload?.message ?? "Falha ao carregar relatório" };
+async function getReport(query: Record<string, string | undefined>, user: Awaited<ReturnType<typeof requireCurrentUser>>): Promise<{ totals: ReportsResponse["totals"]; items: ReportsResponse["items"]; meta: ReportsResponse["meta"] | null; error: string | null }> {
+  const parsed = ticketFiltersSchema.partial().safeParse(query);
+  if (!parsed.success) {
+    return { totals: { totalTickets: 0, totalCustos: 0, totalReembolso: 0, totalColeta: 0 }, items: [], meta: null, error: "Filtros inválidos" };
   }
 
-  return {
-    totals: payload.totals ?? { totalTickets: 0, totalCustos: 0, totalReembolso: 0, totalColeta: 0 },
-    items: Array.isArray(payload.items) ? payload.items : [],
-    meta: payload.meta ?? null,
-    error: null
-  };
+  try {
+    const payload = await getReportsData(parsed.data, user);
+    return {
+      totals: payload.totals,
+      items: payload.items,
+      meta: payload.meta,
+      error: null
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Falha ao carregar relatório";
+    return { totals: { totalTickets: 0, totalCustos: 0, totalReembolso: 0, totalColeta: 0 }, items: [], meta: null, error: message };
+  }
 }
 
 function groupBy(items: ReportsResponse["items"], field: keyof ReportsResponse["items"][number]) {
@@ -35,9 +39,11 @@ function groupBy(items: ReportsResponse["items"], field: keyof ReportsResponse["
 }
 
 export default async function ReportsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
-  await requireCurrentUser();
+  const user = await requireCurrentUser();
+  assertPermission(user.perfil, "reports.full");
+
   const query = await searchParams;
-  const data = await getReport(query);
+  const data = await getReport(query, user);
   const params = new URLSearchParams();
   Object.entries(query).forEach(([k, v]) => v && params.set(k, v));
 

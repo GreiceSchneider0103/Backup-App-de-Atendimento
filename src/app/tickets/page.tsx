@@ -1,31 +1,34 @@
 import { requireCurrentUser } from "@/lib/auth/require-user";
-import { fetchInternalApi } from "@/lib/http/server-fetch";
 import Link from "next/link";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EMPRESAS, MOTIVOS, STATUS_RECLAMACAO, STATUS_TICKET } from "@/config/domains";
 import { TicketListResponse } from "@/lib/contracts";
+import { listTickets } from "@/lib/services/tickets-service";
+import { ticketFiltersSchema } from "@/lib/validation/ticket";
 
-async function getTickets(query: Record<string, string | undefined>): Promise<{ data: TicketListResponse["data"]; pagination: TicketListResponse["pagination"]; error: string | null }> {
-  const params = new URLSearchParams();
-  Object.entries(query).forEach(([key, value]) => value && params.set(key, value));
-  const response = await fetchInternalApi(`/api/tickets?${params.toString()}`);
-
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    return { data: [], pagination: { total: 0, page: 1, pageSize: 20, totalPages: 0 }, error: payload?.message ?? "Falha ao carregar tickets" };
+async function getTickets(query: Record<string, string | undefined>, user: Awaited<ReturnType<typeof requireCurrentUser>>): Promise<{ data: TicketListResponse["data"]; pagination: TicketListResponse["pagination"]; error: string | null }> {
+  const parsed = ticketFiltersSchema.safeParse(query);
+  if (!parsed.success) {
+    return { data: [], pagination: { total: 0, page: 1, pageSize: 20, totalPages: 0 }, error: "Filtros inválidos" };
   }
 
-  return {
-    data: Array.isArray(payload?.data) ? payload.data : [],
-    pagination: payload?.pagination ?? { total: 0, page: 1, pageSize: 20, totalPages: 0 },
-    error: null
-  };
+  try {
+    const payload = await listTickets(parsed.data, user);
+    return {
+      data: payload.data,
+      pagination: payload.pagination,
+      error: null
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Falha ao carregar tickets";
+    return { data: [], pagination: { total: 0, page: 1, pageSize: 20, totalPages: 0 }, error: message };
+  }
 }
 
 export default async function TicketsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
-  await requireCurrentUser();
+  const user = await requireCurrentUser();
   const query = await searchParams;
-  const result = await getTickets(query);
+  const result = await getTickets(query, user);
 
   return (
     <section className="page">

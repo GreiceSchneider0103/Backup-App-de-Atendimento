@@ -1,17 +1,16 @@
 import { requireCurrentUser } from "@/lib/auth/require-user";
-import { fetchInternalApi } from "@/lib/http/server-fetch";
 import Link from "next/link";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { getTicketById } from "@/lib/services/tickets-service";
 
-async function getTicket(id: string) {
-  const response = await fetchInternalApi(`/api/tickets/${id}`);
-  const payload = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    return { ticket: null, error: payload?.message ?? "Falha ao carregar ticket" };
+async function getTicket(id: string, user: Awaited<ReturnType<typeof requireCurrentUser>>) {
+  try {
+    const ticket = await getTicketById(id, user);
+    return { ticket, error: null };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Falha ao carregar ticket";
+    return { ticket: null, error: message };
   }
-
-  return { ticket: payload, error: null };
 }
 
 function dateText(value?: string | null) {
@@ -19,9 +18,9 @@ function dateText(value?: string | null) {
 }
 
 export default async function TicketDetail({ params }: { params: Promise<{ id: string }> }) {
-  await requireCurrentUser();
+  const user = await requireCurrentUser();
   const { id } = await params;
-  const { ticket, error } = await getTicket(id);
+  const { ticket, error } = await getTicket(id, user);
 
   return (
     <section className="page">
@@ -50,7 +49,7 @@ export default async function TicketDetail({ params }: { params: Promise<{ id: s
               <h2>Dados do pedido</h2>
               <p><strong>Número venda:</strong> {ticket.numeroVenda}</p>
               <p><strong>Link pedido:</strong> {ticket.linkPedido || "-"}</p>
-              <p><strong>Data compra:</strong> {dateText(ticket.dataCompra)}</p>
+              <p><strong>Data compra:</strong> {dateText(ticket.dataCompra as unknown as string)}</p>
               <p><strong>Marketplace:</strong> {ticket.canalMarketplace}</p>
               <p><strong>Empresa:</strong> {ticket.empresa}</p>
               <p><strong>Produto:</strong> {ticket.produto}</p>
@@ -63,8 +62,8 @@ export default async function TicketDetail({ params }: { params: Promise<{ id: s
               <p><strong>Status reclamação:</strong> <StatusBadge value={ticket.statusReclamacao} /></p>
               <p><strong>Motivo:</strong> <StatusBadge value={ticket.motivo} /></p>
               <p><strong>Resolução:</strong> {ticket.resolucao ?? "-"}</p>
-              <p><strong>Data reclamação:</strong> {dateText(ticket.dataReclamacao)}</p>
-              <p><strong>Prazo conclusão:</strong> {dateText(ticket.prazoConclusao)}</p>
+              <p><strong>Data reclamação:</strong> {dateText(ticket.dataReclamacao as unknown as string)}</p>
+              <p><strong>Prazo conclusão:</strong> {dateText(ticket.prazoConclusao as unknown as string)}</p>
               <p><strong>SLA:</strong> <StatusBadge value={ticket.slaStatus} /></p>
             </article>
 
@@ -74,8 +73,8 @@ export default async function TicketDetail({ params }: { params: Promise<{ id: s
               <p><strong>Coleta:</strong> {Number(ticket.valorColeta ?? 0).toFixed(2)}</p>
               <p><strong>Custos totais:</strong> {Number(ticket.custosTotais ?? 0).toFixed(2)}</p>
               <p><strong>Responsável:</strong> {ticket.responsavelId ?? "-"}</p>
-              <p><strong>Criado em:</strong> {dateText(ticket.criadoEm)}</p>
-              <p><strong>Atualizado em:</strong> {dateText(ticket.atualizadoEm)}</p>
+              <p><strong>Criado em:</strong> {dateText(ticket.criadoEm as unknown as string)}</p>
+              <p><strong>Atualizado em:</strong> {dateText(ticket.atualizadoEm as unknown as string)}</p>
               <p><strong>Atualizado por:</strong> {ticket.atualizadoPorId ?? "-"}</p>
             </article>
           </div>
@@ -83,8 +82,8 @@ export default async function TicketDetail({ params }: { params: Promise<{ id: s
           <article className="card">
             <h2>Histórico de auditoria</h2>
             <ul>
-              {(Array.isArray(ticket.auditoria) ? ticket.auditoria : []).map((item: { id: string; dataHora: string; acao: string; campo: string }) => (
-                <li key={item.id}>{item.dataHora} — {item.acao} — {item.campo}</li>
+              {(Array.isArray(ticket.auditoria) ? ticket.auditoria : []).map((item) => (
+                <li key={item.id}>{String(item.dataHora)} — {item.acao} — {item.campo}</li>
               ))}
             </ul>
           </article>
