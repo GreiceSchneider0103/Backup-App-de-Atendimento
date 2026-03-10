@@ -34,7 +34,14 @@ function authUnavailableResponse(request: NextRequest) {
 
 export async function middleware(request: NextRequest) {
   if (publicRoutes.some((route) => request.nextUrl.pathname.startsWith(route))) {
-    return NextResponse.next();
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-route-access", "public");
+
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders
+      }
+    });
   }
 
   if (!hasSupabaseEnv()) {
@@ -45,9 +52,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-route-access", "private");
+
   const response = NextResponse.next({
     request: {
-      headers: request.headers
+      headers: requestHeaders
     }
   });
 
